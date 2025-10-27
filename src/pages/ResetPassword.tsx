@@ -19,6 +19,7 @@ import { lockClosedOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import { validators } from '../utils/validators';
+import { TelemetryCollector } from '../utils/telemetry.util';
 import './ResetPassword.css';
 
 const ResetPassword: React.FC = () => {
@@ -26,6 +27,7 @@ const ResetPassword: React.FC = () => {
   const location = useLocation();
   
   const [token, setToken] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,9 +37,10 @@ const ResetPassword: React.FC = () => {
   const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
-    // Extract token from URL query parameters
+    // Extract token and email from URL query parameters
     const params = new URLSearchParams(location.search);
     const resetToken = params.get('token');
+    const resetEmail = params.get('email');
     
     if (resetToken) {
       setToken(resetToken);
@@ -45,6 +48,10 @@ const ResetPassword: React.FC = () => {
       setToastMessage('Invalid or missing reset token');
       setToastColor('danger');
       setShowToast(true);
+    }
+    
+    if (resetEmail) {
+      setEmail(resetEmail);
     }
   }, [location]);
 
@@ -82,7 +89,11 @@ const ResetPassword: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await AuthService.resetPassword(token, password);
+      // Collect telemetry data
+      const telemetry = await TelemetryCollector.collectBasicTelemetry();
+      
+      const authService = new AuthService();
+      await authService.resetPassword(token, password, email, telemetry);
       setResetSuccess(true);
       setToastMessage('Password reset successfully!');
       setToastColor('success');

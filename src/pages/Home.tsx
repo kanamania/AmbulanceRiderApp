@@ -19,62 +19,82 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonIcon
+  IonIcon,
+  IonInput,
+  IonTextarea,
+  IonToast
 } from '@ionic/react';
-import { locationOutline, navigateOutline, timeOutline } from 'ionicons/icons';
+import { locationOutline, navigateOutline, mapOutline } from 'ionicons/icons';
 import TripMap from '../components/TripMap';
-import routeService from '../services/route.service';
+import LocationPicker from '../components/LocationPicker';
+import DynamicFormField from '../components/DynamicFormField';
+import { useAuth } from '../contexts/AuthContext';
 import locationService from '../services/location.service';
-import { Route, Location } from '../types';
+import tripService from '../services/trip.service';
+import { Location, CreateTripData, TripType } from '../types';
+import { TelemetryCollector } from '../utils/telemetry.util';
 import './Home.css';
 
-interface LocationWithCoords extends Location {
-  lat: number;
-  lng: number;
+interface TripFormData {
+  tripTypeId: number | null;
+  fromLocationId: number | null;
+  toLocationId: number | null;
+  fromAddress: string;
+  toAddress: string;
+  fromLatitude: number | null;
+  fromLongitude: number | null;
+  toLatitude: number | null;
+  toLongitude: number | null;
+  patientName: string;
+  emergencyType: string;
+  notes: string;
+  attributeValues: Record<string, any>;
 }
 
-// Mock coordinates for locations (in a real app, these would come from your API)
-const LOCATION_COORDS: Record<string, { lat: number; lng: number }> = {
-  'Addis Ababa': { lat: 9.0054, lng: 38.7636 },
-  'Adama': { lat: 8.5390, lng: 39.2682 },
-  'Bahir Dar': { lat: 11.6000, lng: 37.3833 },
-  'Mekele': { lat: 13.4966, lng: 39.4769 },
-  'Hawassa': { lat: 7.0612, lng: 38.4764 },
-};
-
 const Home: React.FC = () => {
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const { tripTypes } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
+  const [selectedTripType, setSelectedTripType] = useState<TripType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [fromLocation, setFromLocation] = useState<LocationWithCoords | null>(null);
-  const [toLocation, setToLocation] = useState<LocationWithCoords | null>(null);
-  const [routeCoords, setRouteCoords] = useState<{ lat: number; lng: number }[]>([]);
-  const [showRouteInfo, setShowRouteInfo] = useState<boolean>(false);
-  const [estimatedTime, setEstimatedTime] = useState<string>('');
-  const [estimatedDistance, setEstimatedDistance] = useState<string>('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastColor, setToastColor] = useState<'danger' | 'success'>('danger');
 
-  // Fetch routes and locations on component mount
+  // Form state
+  const [formData, setFormData] = useState<TripFormData>({
+    tripTypeId: null,
+    fromLocationId: null,
+    toLocationId: null,
+    fromAddress: '',
+    toAddress: '',
+    fromLatitude: null,
+    fromLongitude: null,
+    toLatitude: null,
+    toLongitude: null,
+    patientName: '',
+    emergencyType: '',
+    notes: '',
+    attributeValues: {},
+  });
+
+  // Map picker state
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
+
+  // Fetch locations on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [routesData, locationsData] = await Promise.all([
-          routeService.getAllRoutes(),
-          locationService.getAllLocations()
-        ]);
-        
-        setRoutes(routesData);
+        const locationsData = await locationService.getAllLocations();
         setLocations(locationsData);
-        
-        // If there are routes, select the first one by default
-        if (routesData.length > 0) {
-          handleRouteSelect(routesData[0].id.toString());
-        }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load data');
-        console.error('Error fetching data:', err);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load locations';
+        setToastMessage(errorMessage);
+        setToastColor('danger');
+        setShowToast(true);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
@@ -83,162 +103,443 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Handle route selection
-  const handleRouteSelect = (routeId: string) => {
-    const route = routes.find(r => r.id.toString() === routeId);
-    if (!route) return;
-
-    setSelectedRoute(route);
-    
-    // Find the from and to locations
-    const fromLoc = locations.find(loc => loc.id === route.fromLocationId);
-    const toLoc = locations.find(loc => loc.id === route.toLocationId);
-
-    if (fromLoc && toLoc) {
-      const fromCoords = LOCATION_COORDS[fromLoc.name] || { lat: 9.0054, lng: 38.7636 };
-      const toCoords = LOCATION_COORDS[toLoc.name] || { lat: 9.0054, lng: 38.7636 };
-      
-      setFromLocation({ ...fromLoc, ...fromCoords });
-      setToLocation({ ...toLoc, ...toCoords });
-      
-      // Generate some points for the route line (in a real app, this would come from a routing API)
-      const points = [];
-      const steps = 10;
-      for (let i = 0; i <= steps; i++) {
-        const lat = fromCoords.lat + (toCoords.lat - fromCoords.lat) * (i / steps);
-        const lng = fromCoords.lng + (toCoords.lng - fromCoords.lng) * (i / steps);
-        // Add some randomness to make it look like a real route
-        points.push({
-          lat: lat + (Math.random() - 0.5) * 0.1,
-          lng: lng + (Math.random() - 0.5) * 0.1
-        });
-      }
-      setRouteCoords(points);
-      
-      // Calculate estimated time and distance (in a real app, this would come from the API)
-      setEstimatedDistance(`${Math.round(route.distance * 10) / 10} km`);
-      setEstimatedTime(`${Math.round(route.estimatedDuration / 60)} mins`);
-      
-      setShowRouteInfo(true);
+  // Handle predefined location selection for "from"
+  const handleFromLocationSelect = (locationId: string) => {
+    const location = locations.find(loc => loc.id.toString() === locationId);
+    if (location) {
+      setFormData(prev => ({
+        ...prev,
+        fromLocationId: location.id,
+        fromAddress: location.name,
+        // In a real app, you would get coordinates from the location object
+        // For now, we'll leave them null until the user picks from map
+      }));
     }
   };
 
-  // Handle book now button click
-  const handleBookNow = () => {
-    if (!selectedRoute) return;
-    alert(`Booking confirmed for route: ${selectedRoute.name}`);
-    // In a real app, you would navigate to a booking page or show a booking form
+  // Handle predefined location selection for "to"
+  const handleToLocationSelect = (locationId: string) => {
+    const location = locations.find(loc => loc.id.toString() === locationId);
+    if (location) {
+      setFormData(prev => ({
+        ...prev,
+        toLocationId: location.id,
+        toAddress: location.name,
+        // In a real app, you would get coordinates from the location object
+      }));
+    }
+  };
+
+  // Handle map-based location selection for "from"
+  const handleFromMapLocation = (location: { latitude: number; longitude: number; address: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      fromLatitude: location.latitude,
+      fromLongitude: location.longitude,
+      fromAddress: location.address,
+      fromLocationId: null, // Clear predefined location when using custom coordinates
+    }));
+  };
+
+  // Handle map-based location selection for "to"
+  const handleToMapLocation = (location: { latitude: number; longitude: number; address: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      toLatitude: location.latitude,
+      toLongitude: location.longitude,
+      toAddress: location.address,
+      toLocationId: null, // Clear predefined location when using custom coordinates
+    }));
+  };
+
+  // Handle trip type selection
+  const handleTripTypeSelect = (tripTypeId: string) => {
+    const tripType = tripTypes.find(t => t.id.toString() === tripTypeId);
+    setSelectedTripType(tripType || null);
+    setFormData(prev => ({
+      ...prev,
+      tripTypeId: tripType ? tripType.id : null,
+      attributeValues: {}, // Reset attribute values when trip type changes
+    }));
+  };
+
+  // Handle dynamic attribute value change
+  const handleAttributeChange = (attributeName: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      attributeValues: {
+        ...prev.attributeValues,
+        [attributeName]: value,
+      },
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    // Validation
+    if (!formData.fromAddress || !formData.toAddress) {
+      setToastMessage('Please select both pickup and destination locations');
+      setToastColor('danger');
+      setShowToast(true);
+      return;
+    }
+
+    if (formData.fromLatitude === null || formData.fromLongitude === null ||
+        formData.toLatitude === null || formData.toLongitude === null) {
+      setToastMessage('Please select locations with coordinates using the map picker');
+      setToastColor('danger');
+      setShowToast(true);
+      return;
+    }
+
+    if (!formData.patientName.trim()) {
+      setToastMessage('Please enter patient name');
+      setToastColor('danger');
+      setShowToast(true);
+      return;
+    }
+
+    // Validate required dynamic attributes
+    if (selectedTripType) {
+      const requiredAttributes = selectedTripType.attributes.filter(attr => attr.isRequired && attr.isActive);
+      for (const attr of requiredAttributes) {
+        const value = formData.attributeValues[attr.name];
+        if (value === undefined || value === null || value === '') {
+          setToastMessage(`Please fill in required field: ${attr.label}`);
+          setToastColor('danger');
+          setShowToast(true);
+          return;
+        }
+      }
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Collect telemetry data with GPS location
+      const telemetry = await TelemetryCollector.collectTelemetryWithLocation();
+
+      const tripData: CreateTripData = {
+        tripTypeId: formData.tripTypeId || undefined,
+        fromLocationId: formData.fromLocationId || undefined,
+        toLocationId: formData.toLocationId || undefined,
+        fromAddress: formData.fromAddress,
+        toAddress: formData.toAddress,
+        fromLatitude: formData.fromLatitude,
+        fromLongitude: formData.fromLongitude,
+        toLatitude: formData.toLatitude,
+        toLongitude: formData.toLongitude,
+        patientName: formData.patientName,
+        emergencyType: formData.emergencyType || undefined,
+        notes: formData.notes || undefined,
+        attributeValues: Object.keys(formData.attributeValues).length > 0 ? formData.attributeValues : undefined,
+        telemetry,
+      };
+
+      await tripService.createTrip(tripData);
+      
+      setToastMessage('Trip request created successfully!');
+      setToastColor('success');
+      setShowToast(true);
+      
+      // Reset form
+      setFormData({
+        tripTypeId: null,
+        fromLocationId: null,
+        toLocationId: null,
+        fromAddress: '',
+        toAddress: '',
+        fromLatitude: null,
+        fromLongitude: null,
+        toLatitude: null,
+        toLongitude: null,
+        patientName: '',
+        emergencyType: '',
+        notes: '',
+        attributeValues: {},
+      });
+      setSelectedTripType(null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create trip request';
+      setToastMessage(errorMessage);
+      setToastColor('danger');
+      setShowToast(true);
+      console.error('Error creating trip:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Ambulance Service</IonTitle>
+          <IonTitle>Book Ambulance</IonTitle>
         </IonToolbar>
       </IonHeader>
       
       <IonContent className="ion-padding">
-        <IonLoading isOpen={loading} message="Loading..." />
-        
-        {error && (
-          <IonCard color="danger">
-            <IonCardHeader>
-              <IonCardSubtitle>Error</IonCardSubtitle>
-              <IonCardTitle>Something went wrong</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>{error}</IonCardContent>
-          </IonCard>
-        )}
+        <IonLoading isOpen={loading || submitting} message={submitting ? 'Creating trip...' : 'Loading...'} />
         
         <IonCard>
           <IonCardHeader>
-            <IonCardSubtitle>Book an Ambulance</IonCardSubtitle>
-            <IonCardTitle>Select Your Route</IonCardTitle>
+            <IonCardSubtitle>Trip</IonCardSubtitle>
+            <IonCardTitle>Request a Trip</IonCardTitle>
           </IonCardHeader>
           
           <IonCardContent>
-            <IonItem>
-              <IonLabel position="stacked">Select Route</IonLabel>
-              <IonSelect 
-                value={selectedRoute?.id.toString()} 
-                onIonChange={e => handleRouteSelect(e.detail.value)}
-                placeholder="Select a route"
-                interface="action-sheet"
-              >
-                {routes.map(route => (
-                  <IonSelectOption key={route.id} value={route.id.toString()}>
-                    {route.name} ({route.fromLocation.name} → {route.toLocation.name})
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
-            
-            {showRouteInfo && selectedRoute && fromLocation && toLocation && (
-              <>
-                <div style={{ margin: '20px 0' }}>
-                  <TripMap 
-                    fromLocation={{
-                      lat: fromLocation.lat,
-                      lng: fromLocation.lng,
-                      name: fromLocation.name
-                    }}
-                    toLocation={{
-                      lat: toLocation.lat,
-                      lng: toLocation.lng,
-                      name: toLocation.name
-                    }}
-                    route={routeCoords}
-                  />
-                </div>
-                
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="12">
-                      <IonItem lines="none">
-                        <IonIcon icon={locationOutline} slot="start" color="primary" />
-                        <IonLabel>
-                          <h3>From: {fromLocation.name}</h3>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem lines="none">
-                        <IonIcon icon={navigateOutline} slot="start" color="primary" />
-                        <IonLabel>
-                          <h3>To: {toLocation.name}</h3>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem lines="none">
-                        <IonIcon icon={timeOutline} slot="start" color="primary" />
-                        <IonLabel>
-                          <h3>Estimated Time: {estimatedTime}</h3>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem lines="none">
-                        <IonIcon icon="analytics-outline" slot="start" color="primary" />
-                        <IonLabel>
-                          <h3>Distance: {estimatedDistance}</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                  
-                  <IonRow className="ion-justify-content-center ion-margin-top">
-                    <IonCol size="12" sizeMd="8" sizeLg="6">
-                      <IonButton 
-                        expand="block" 
-                        size="large" 
-                        onClick={handleBookNow}
-                        disabled={!selectedRoute}
-                      >
-                        Book Ambulance Now
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </>
-            )}
+            <IonGrid>
+              {/* Pickup Section */}
+              <IonRow>
+                <IonCol size="12">
+                  <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+                    <IonIcon icon={locationOutline} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+                    Pickup
+                  </h3>
+                </IonCol>
+              </IonRow>
+              
+              <IonRow>
+                <IonCol size="12" sizeMd="8">
+                  <IonItem>
+                    <IonLabel position="stacked">Select Predefined Location</IonLabel>
+                    <IonSelect 
+                      value={formData.fromLocationId?.toString() || ''} 
+                      onIonChange={e => handleFromLocationSelect(e.detail.value)}
+                      placeholder="Choose a location"
+                      interface="action-sheet"
+                    >
+                      {locations.map(location => (
+                        <IonSelectOption key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
+                <IonCol size="12" sizeMd="4">
+                  <IonButton 
+                    expand="block" 
+                    fill="outline"
+                    onClick={() => setShowFromPicker(true)}
+                    style={{ marginTop: '20px' }}
+                  >
+                    <IonIcon icon={mapOutline} slot="start" />
+                    Pick on Map
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+              
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Pickup Address</IonLabel>
+                    <IonInput 
+                      value={formData.fromAddress}
+                      onIonInput={e => setFormData(prev => ({ ...prev, fromAddress: e.detail.value || '' }))}
+                      placeholder="Address will be filled automatically"
+                      readonly={!!formData.fromLocationId}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+
+              {/* Destination Location Section */}
+              <IonRow style={{ marginTop: '24px' }}>
+                <IonCol size="12">
+                  <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+                    <IonIcon icon={navigateOutline} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+                    Destination
+                  </h3>
+                </IonCol>
+              </IonRow>
+              
+              <IonRow>
+                <IonCol size="12" sizeMd="8">
+                  <IonItem>
+                    <IonLabel position="stacked">Select Predefined Location</IonLabel>
+                    <IonSelect 
+                      value={formData.toLocationId?.toString() || ''} 
+                      onIonChange={e => handleToLocationSelect(e.detail.value)}
+                      placeholder="Choose a location"
+                      interface="action-sheet"
+                    >
+                      {locations.map(location => (
+                        <IonSelectOption key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                </IonCol>
+                <IonCol size="12" sizeMd="4">
+                  <IonButton 
+                    expand="block" 
+                    fill="outline"
+                    onClick={() => setShowToPicker(true)}
+                    style={{ marginTop: '20px' }}
+                  >
+                    <IonIcon icon={mapOutline} slot="start" />
+                    Pick on Map
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+              
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Destination Address</IonLabel>
+                    <IonInput 
+                      value={formData.toAddress}
+                      onIonInput={e => setFormData(prev => ({ ...prev, toAddress: e.detail.value || '' }))}
+                      placeholder="Address will be filled automatically"
+                      readonly={!!formData.toLocationId}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Select Trip Type</IonLabel>
+                    <IonSelect 
+                      value={formData.tripTypeId?.toString() || ''} 
+                      onIonChange={e => handleTripTypeSelect(e.detail.value)}
+                      placeholder="Choose trip type (optional)"
+                      interface="action-sheet"
+                    >
+                      {tripTypes.map(tripType => (
+                        <IonSelectOption key={tripType.id} value={tripType.id.toString()}>
+                          {tripType.name}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                  {selectedTripType?.description && (
+                    <p style={{ fontSize: '12px', color: '#666', margin: '8px 16px', fontStyle: 'italic' }}>
+                      {selectedTripType.description}
+                    </p>
+                  )}
+                </IonCol>
+              </IonRow>
+
+              {/* Dynamic Attributes Section */}
+              {selectedTripType && selectedTripType.attributes.length > 0 && (
+                  <>
+                    <IonRow style={{ marginTop: '24px' }}>
+                      <IonCol size="12">
+                        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+                          Additional Information
+                        </h3>
+                      </IonCol>
+                    </IonRow>
+
+                    {selectedTripType.attributes
+                        .filter(attr => attr.isActive)
+                        .sort((a, b) => a.displayOrder - b.displayOrder)
+                        .map(attribute => (
+                            <IonRow key={attribute.id}>
+                              <IonCol size="12">
+                                <DynamicFormField
+                                    attribute={attribute}
+                                    value={formData.attributeValues[attribute.name]}
+                                    onChange={handleAttributeChange}
+                                />
+                              </IonCol>
+                            </IonRow>
+                        ))}
+                  </>
+              )}
+
+
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Additional Notes</IonLabel>
+                    <IonTextarea 
+                      value={formData.notes}
+                      onIonInput={e => setFormData(prev => ({ ...prev, notes: e.detail.value || '' }))}
+                      placeholder="Any additional information..."
+                      rows={3}
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+
+              {/* Map Preview */}
+              {formData.fromLatitude && formData.fromLongitude && 
+               formData.toLatitude && formData.toLongitude && (
+                <IonRow style={{ marginTop: '24px' }}>
+                  <IonCol size="12">
+                    <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+                      Route Preview
+                    </h3>
+                    <TripMap 
+                      fromLocation={{
+                        lat: formData.fromLatitude,
+                        lng: formData.fromLongitude,
+                        name: formData.fromAddress
+                      }}
+                      toLocation={{
+                        lat: formData.toLatitude,
+                        lng: formData.toLongitude,
+                        name: formData.toAddress
+                      }}
+                    />
+                  </IonCol>
+                </IonRow>
+              )}
+
+              {/* Submit Button */}
+              <IonRow className="ion-margin-top">
+                <IonCol size="12">
+                  <IonButton 
+                    expand="block" 
+                    size="large" 
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                  >
+                    Request Ambulance
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
           </IonCardContent>
         </IonCard>
+
+        {/* Location Pickers */}
+        <LocationPicker 
+          isOpen={showFromPicker}
+          onClose={() => setShowFromPicker(false)}
+          onLocationSelected={handleFromMapLocation}
+          initialLocation={
+            formData.fromLatitude && formData.fromLongitude
+              ? { lat: formData.fromLatitude, lng: formData.fromLongitude }
+              : undefined
+          }
+        />
+        
+        <LocationPicker 
+          isOpen={showToPicker}
+          onClose={() => setShowToPicker(false)}
+          onLocationSelected={handleToMapLocation}
+          initialLocation={
+            formData.toLatitude && formData.toLongitude
+              ? { lat: formData.toLatitude, lng: formData.toLongitude }
+              : undefined
+          }
+        />
+
+        {/* Toast Messages */}
+        <IonToast
+            isOpen={showToast}
+            onDidDismiss={() => setShowToast(false)}
+            message={toastMessage}
+            duration={3000}
+            color={toastColor}
+        />
+
       </IonContent>
     </IonPage>
   );

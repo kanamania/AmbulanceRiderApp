@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AuthService from '../services/auth.service';
+import tripTypeService from '../services/tripType.service';
 import { User, LoginCredentials, AuthContextType } from '../types/auth.types';
+import { TripType } from '../types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -11,6 +13,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [tripTypes, setTripTypes] = useState<TripType[]>([]);
 
   const authService = new AuthService();
   useEffect(() => {
@@ -21,6 +24,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = authService.getUserData();
           if (userData) {
             setUser(userData);
+            
+            // Load trip types from localStorage or fetch
+            const storedTypes = localStorage.getItem('trip_types');
+            if (storedTypes) {
+              try {
+                setTripTypes(JSON.parse(storedTypes));
+              } catch (e) {
+                console.error('Failed to parse stored trip types:', e);
+              }
+            }
+            
+            // Fetch fresh trip types in background
+            try {
+              const types = await tripTypeService.getActiveTripTypes();
+              setTripTypes(types);
+              localStorage.setItem('trip_types', JSON.stringify(types));
+            } catch (error) {
+              console.error('Failed to fetch trip types:', error);
+            }
           }
         }
       } catch (error) {
@@ -36,11 +58,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
+    const response = await authService.login(credentials);
+    setUser(response.user);
+    
+    // Fetch trip types after successful login
     try {
-      const response = await authService.login(credentials);
-      setUser(response.user);
+      const types = await tripTypeService.getActiveTripTypes();
+      setTripTypes(types);
+      // Store in localStorage for persistence
+      localStorage.setItem('trip_types', JSON.stringify(types));
     } catch (error) {
-      throw error;
+      console.error('Failed to fetch trip types:', error);
+      // Don't fail login if trip types fetch fails
     }
   };
 
@@ -49,10 +78,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await authService.logout();
       setUser(null);
+      setTripTypes([]);
+      localStorage.removeItem('trip_types');
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state even if API call fails
       setUser(null);
+      setTripTypes([]);
+      localStorage.removeItem('trip_types');
     }
   };
 
@@ -67,6 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     updateUser,
+    tripTypes,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

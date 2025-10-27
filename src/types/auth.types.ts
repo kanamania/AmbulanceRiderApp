@@ -1,3 +1,6 @@
+import { TripType } from './index';
+import { TelemetryData } from './telemetry.types';
+
 export interface User {
   id: number;
   firstName: string;
@@ -13,6 +16,7 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+  telemetry?: TelemetryData;
 }
 
 export interface RegisterData {
@@ -23,6 +27,7 @@ export interface RegisterData {
   password: string;
   image?: File;
   roleIds: number[];
+  telemetry?: TelemetryData;
 }
 
 export interface AuthResponse {
@@ -37,4 +42,5 @@ export interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  tripTypes: TripType[];
 }

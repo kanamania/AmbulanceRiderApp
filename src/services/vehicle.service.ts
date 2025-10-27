@@ -8,8 +8,9 @@ class VehicleService {
     try {
       const response = await apiService.get<Vehicle[]>(API_CONFIG.ENDPOINTS.VEHICLES.LIST);
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch vehicles');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch vehicles';
+      throw new Error(message);
     }
   }
 
@@ -18,8 +19,9 @@ class VehicleService {
     try {
       const response = await apiService.get<VehicleType[]>(API_CONFIG.ENDPOINTS.VEHICLES.TYPES);
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch vehicle types');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch vehicle types';
+      throw new Error(message);
     }
   }
 
@@ -28,8 +30,9 @@ class VehicleService {
     try {
       const response = await apiService.get<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.GET(id));
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch vehicle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch vehicle';
+      throw new Error(message);
     }
   }
 
@@ -57,8 +60,9 @@ class VehicleService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to create vehicle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create vehicle';
+      throw new Error(message);
     }
   }
 
@@ -87,8 +91,9 @@ class VehicleService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update vehicle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update vehicle';
+      throw new Error(message);
     }
   }
 
@@ -96,8 +101,9 @@ class VehicleService {
   async deleteVehicle(id: number): Promise<void> {
     try {
       await apiService.delete(API_CONFIG.ENDPOINTS.VEHICLES.DELETE(id));
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete vehicle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete vehicle';
+      throw new Error(message);
     }
   }
 }

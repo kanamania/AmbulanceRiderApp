@@ -19,8 +19,9 @@ class FileUploadService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to upload vehicle image');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to upload vehicle image';
+      throw new Error(message);
     }
   }
 
@@ -30,8 +31,9 @@ class FileUploadService {
       await apiService.delete(
         `${API_CONFIG.ENDPOINTS.FILE_UPLOAD.DELETE_VEHICLE_IMAGE}?filePath=${encodeURIComponent(filePath)}`
       );
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete vehicle image');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete vehicle image';
+      throw new Error(message);
     }
   }
 

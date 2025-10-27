@@ -19,6 +19,7 @@ import { arrowBackOutline, mailOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import { validators } from '../utils/validators';
+import { TelemetryCollector } from '../utils/telemetry.util';
 import './ForgotPassword.css';
 
 const ForgotPassword: React.FC = () => {
@@ -52,7 +53,10 @@ const ForgotPassword: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await authService.forgotPassword(email);
+      // Collect telemetry data
+      const telemetry = await TelemetryCollector.collectBasicTelemetry();
+      
+      await authService.forgotPassword(email, telemetry);
       setEmailSent(true);
       setToastMessage('Password reset instructions sent to your email');
       setToastColor('success');

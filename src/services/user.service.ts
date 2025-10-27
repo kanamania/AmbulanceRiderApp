@@ -8,8 +8,9 @@ class UserService {
     try {
       const response = await apiService.get<User[]>(API_CONFIG.ENDPOINTS.USERS.LIST);
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch users');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch users';
+      throw new Error(message);
     }
   }
 
@@ -18,8 +19,9 @@ class UserService {
     try {
       const response = await apiService.get<User>(API_CONFIG.ENDPOINTS.USERS.GET(id));
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch user');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch user';
+      throw new Error(message);
     }
   }
 
@@ -51,8 +53,9 @@ class UserService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to create user');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create user';
+      throw new Error(message);
     }
   }
 
@@ -85,8 +88,9 @@ class UserService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update user');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update user';
+      throw new Error(message);
     }
   }
 
@@ -94,8 +98,9 @@ class UserService {
   async deleteUser(id: number): Promise<void> {
     try {
       await apiService.delete(API_CONFIG.ENDPOINTS.USERS.DELETE(id));
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete user');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete user';
+      throw new Error(message);
     }
   }
 }

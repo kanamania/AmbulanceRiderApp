@@ -16,6 +16,7 @@ import {
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { TelemetryCollector } from '../utils/telemetry.util';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -42,7 +43,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
+      // Collect telemetry data
+      const telemetry = await TelemetryCollector.collectBasicTelemetry();
+      
+      await login({ email, password, telemetry });
       setToastMessage('Login successful!');
       setToastColor('success');
       setShowToast(true);

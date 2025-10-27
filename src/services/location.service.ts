@@ -2,14 +2,15 @@ import apiService from './api.service';
 import { API_CONFIG } from '../config/api.config';
 import { Location, CreateLocationData, UpdateLocationData } from '../types';
 
-class LocationService {
+export class LocationService {
   // Get all locations
   async getAllLocations(): Promise<Location[]> {
     try {
       const response = await apiService.get<Location[]>(API_CONFIG.ENDPOINTS.LOCATIONS.LIST);
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch locations');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch locations';
+      throw new Error(message);
     }
   }
 
@@ -18,8 +19,9 @@ class LocationService {
     try {
       const response = await apiService.get<Location>(API_CONFIG.ENDPOINTS.LOCATIONS.GET(id));
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch location');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch location';
+      throw new Error(message);
     }
   }
 
@@ -43,8 +45,9 @@ class LocationService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to create location');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create location';
+      throw new Error(message);
     }
   }
 
@@ -67,8 +70,9 @@ class LocationService {
         }
       );
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update location');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update location';
+      throw new Error(message);
     }
   }
 
@@ -76,10 +80,9 @@ class LocationService {
   async deleteLocation(id: number): Promise<void> {
     try {
       await apiService.delete(API_CONFIG.ENDPOINTS.LOCATIONS.DELETE(id));
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete location');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete location';
+      throw new Error(message);
     }
   }
 }
-
-export default new LocationService();

@@ -14,8 +14,25 @@ export default class AuthService {
 
       this.setAuthData(response);
       return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      throw new Error(message);
+    }
+  }
+
+  // Register new user
+  async register(data: RegisterData): Promise<AuthResponse> {
+    try {
+      const response = await apiService.post<AuthResponse>(
+        API_CONFIG.ENDPOINTS.AUTH.REGISTER,
+        data
+      );
+
+      this.setAuthData(response);
+      return response;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Registration failed';
+      throw new Error(message);
     }
   }
 
@@ -63,23 +80,27 @@ export default class AuthService {
   }
 
   // Forgot password - Send reset email
-  async forgotPassword(email: string): Promise<void> {
+  async forgotPassword(email: string, telemetry?: any): Promise<void> {
     try {
-      await apiService.post(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to send reset email');
+      await apiService.post(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, { email, telemetry });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send reset email';
+      throw new Error(message);
     }
   }
 
   // Reset password with token
-  async resetPassword(token: string, password: string): Promise<void> {
+  async resetPassword(token: string, password: string, email?: string, telemetry?: any): Promise<void> {
     try {
       await apiService.post(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, {
         token,
         password,
+        email,
+        telemetry,
       });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to reset password');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reset password';
+      throw new Error(message);
     }
   }
 
