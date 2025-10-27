@@ -31,41 +31,14 @@ class ApiService {
       }
     );
 
-    // Response interceptor - Handle token refresh
+    // Response interceptor - Handle 401 errors
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-
-        // If error is 401 and we haven't retried yet
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-            
-            if (refreshToken) {
-              // Try to refresh the token
-              const response = await axios.post(
-                `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`,
-                { refresh_token: refreshToken }
-              );
-
-              const { access_token } = response.data;
-              localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
-
-              // Retry the original request with new token
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${access_token}`;
-              }
-              return this.axiosInstance(originalRequest);
-            }
-          } catch (refreshError) {
-            // Refresh failed, clear tokens and redirect to login
-            this.clearAuthData();
-            window.location.href = '/login';
-            return Promise.reject(refreshError);
-          }
+        // If error is 401, clear auth data and redirect to login
+        if (error.response?.status === 401) {
+          this.clearAuthData();
+          window.location.href = '/login';
         }
 
         return Promise.reject(error);
@@ -75,7 +48,6 @@ class ApiService {
 
   private clearAuthData(): void {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   }
 

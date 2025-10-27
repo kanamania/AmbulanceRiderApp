@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AuthService from '../services/auth.service';
-import { User, LoginCredentials, RegisterData, AuthContextType } from '../types/auth.types';
+import { User, LoginCredentials, AuthContextType } from '../types/auth.types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -12,24 +12,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const authService = new AuthService();
   useEffect(() => {
     // Check if user is already authenticated on mount
     const initAuth = async () => {
       try {
-        if (AuthService.isAuthenticated()) {
-          const userData = AuthService.getUserData();
+        if (authService.isAuthenticated()) {
+          const userData = authService.getUserData();
           if (userData) {
             setUser(userData);
-          } else {
-            // Try to fetch user data from API
-            const currentUser = await AuthService.getCurrentUser();
-            setUser(currentUser);
           }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         // Clear invalid auth data
-        await AuthService.logout();
+        await authService.logout();
       } finally {
         setIsLoading(false);
       }
@@ -40,25 +37,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      const response = await AuthService.login(credentials);
+      const response = await authService.login(credentials);
       setUser(response.user);
     } catch (error) {
       throw error;
     }
   };
 
-  const register = async (data: RegisterData): Promise<void> => {
-    try {
-      const response = await AuthService.register(data);
-      setUser(response.user);
-    } catch (error) {
-      throw error;
-    }
-  };
 
   const logout = async (): Promise<void> => {
     try {
-      await AuthService.logout();
+      await authService.logout();
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
@@ -76,7 +65,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     isLoading,
     login,
-    register,
     logout,
     updateUser,
   };

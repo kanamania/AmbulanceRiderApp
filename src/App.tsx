@@ -10,15 +10,15 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle, personCircle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import {personCircle, settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
+import Home from './pages/Home';
+import Activity from './pages/Activity';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Settings from "./pages/Settings";
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -70,35 +70,38 @@ const App: React.FC = () => (
             <ProtectedRoute>
               <IonTabs>
                 <IonRouterOutlet>
-                  <Route exact path="/tabs/tab1">
-                    <Tab1 />
+                  <Route exact path="/tabs/home">
+                    <Home />
                   </Route>
-                  <Route exact path="/tabs/tab2">
-                    <Tab2 />
+                  <Route exact path="/tabs/activity">
+                    <Activity />
                   </Route>
-                  <Route exact path="/tabs/tab3">
-                    <Tab3 />
+                  <Route exact path="/tabs/settings">
+                    <Settings />
+                  </Route>
+                  <Route exact path="/tabs/profile">
+                    <Profile />
                   </Route>
                   <Route exact path="/tabs">
-                    <Redirect to="/tabs/tab1" />
+                    <Redirect to="/tabs/home" />
                   </Route>
                 </IonRouterOutlet>
                 <IonTabBar slot="bottom">
-                  <IonTabButton tab="tab1" href="/tabs/tab1">
-                    <IonIcon aria-hidden="true" icon={triangle} />
+                  <IonTabButton tab="home" href="/tabs/home">
+                    <IonIcon aria-hidden="true" icon={homeSharp} />
                     <IonLabel>Home</IonLabel>
                   </IonTabButton>
-                  <IonTabButton tab="tab2" href="/tabs/tab2">
-                    <IonIcon aria-hidden="true" icon={ellipse} />
-                    <IonLabel>Services</IonLabel>
+                  <IonTabButton tab="activity" href="/tabs/activity">
+                    <IonIcon aria-hidden="true" icon={statsChart} />
+                    <IonLabel>Activity</IonLabel>
                   </IonTabButton>
-                  <IonTabButton tab="tab3" href="/tabs/tab3">
-                    <IonIcon aria-hidden="true" icon={square} />
-                    <IonLabel>History</IonLabel>
-                  </IonTabButton>
-                  <IonTabButton tab="profile" href="/profile">
+                  <IonTabButton tab="profile" href="/tabs/profile">
                     <IonIcon aria-hidden="true" icon={personCircle} />
                     <IonLabel>Profile</IonLabel>
+                  </IonTabButton>
+                  <IonTabButton tab="settings" href="/tabs/settings">
+                    <IonIcon aria-hidden="true" icon={settingsSharp} />
+                    <IonLabel>Settings</IonLabel>
                   </IonTabButton>
                 </IonTabBar>
               </IonTabs>
@@ -106,7 +109,7 @@ const App: React.FC = () => (
           </Route>
           
           {/* Profile Route (Protected, outside tabs) */}
-          <Route exact path="/profile">
+          <Route exact path="/tabs/profile">
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
@@ -114,7 +117,7 @@ const App: React.FC = () => (
           
           {/* Default Redirect */}
           <Route exact path="/">
-            <Redirect to="/tabs/tab1" />
+            <Redirect to="/tabs/home" />
           </Route>
         </IonRouterOutlet>
       </IonReactRouter>

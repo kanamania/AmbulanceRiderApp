@@ -606,7 +606,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 **Register**:
 ```bash
-curl -X POST http://localhost:8000/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test User",
@@ -618,7 +618,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 **Login**:
 ```bash
-curl -X POST http://localhost:8000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -628,7 +628,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 **Get User**:
 ```bash
-curl -X GET http://localhost:8000/api/auth/me \
+curl -X GET http://localhost:5000/api/auth/me \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 

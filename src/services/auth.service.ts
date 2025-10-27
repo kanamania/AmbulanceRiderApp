@@ -3,7 +3,7 @@ import apiService from './api.service';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
 
-export class AuthService {
+export default class AuthService {
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
@@ -19,42 +19,9 @@ export class AuthService {
     }
   }
 
-  // Register new user
-  async register(data: RegisterData): Promise<AuthResponse> {
-    try {
-      const response = await apiService.post<AuthResponse>(
-        API_CONFIG.ENDPOINTS.AUTH.REGISTER,
-        data
-      );
-
-      this.setAuthData(response);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
-    }
-  }
-
   // Logout user
   async logout(): Promise<void> {
-    try {
-      await apiService.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      this.clearAuthData();
-    }
-  }
-
-  // Get current user
-  async getCurrentUser(): Promise<User> {
-    try {
-      const response = await apiService.get<{ user: User }>(
-        API_CONFIG.ENDPOINTS.AUTH.ME
-      );
-      return response.user;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to get user data');
-    }
+    this.clearAuthData();
   }
 
   // Check if user is authenticated
@@ -76,10 +43,6 @@ export class AuthService {
     return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   }
 
-  // Get refresh token
-  getRefreshToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-  }
 
   // Get stored user data
   getUserData(): User | null {
@@ -89,15 +52,13 @@ export class AuthService {
 
   // Set authentication data
   private setAuthData(authResponse: AuthResponse): void {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, authResponse.access_token);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, authResponse.refresh_token);
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, authResponse.token);
     localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(authResponse.user));
   }
 
   // Clear authentication data
   private clearAuthData(): void {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   }
 

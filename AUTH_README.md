@@ -224,7 +224,7 @@ Response: {
 Create a `.env` file:
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ### API Configuration
@@ -233,7 +233,7 @@ Edit `src/config/api.config.ts`:
 
 ```typescript
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   TIMEOUT: 30000,
   ENDPOINTS: {
     AUTH: {

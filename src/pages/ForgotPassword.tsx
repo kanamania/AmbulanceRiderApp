@@ -17,7 +17,7 @@ import {
 } from '@ionic/react';
 import { arrowBackOutline, mailOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
-import {AuthService as authService} from '../services/auth.service';
+import AuthService from '../services/auth.service';
 import { validators } from '../utils/validators';
 import './ForgotPassword.css';
 
@@ -31,6 +31,7 @@ const ForgotPassword: React.FC = () => {
   const [toastColor, setToastColor] = useState<'danger' | 'success'>('danger');
   const [emailSent, setEmailSent] = useState(false);
 
+  const authService = new AuthService();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -56,8 +57,9 @@ const ForgotPassword: React.FC = () => {
       setToastMessage('Password reset instructions sent to your email');
       setToastColor('success');
       setShowToast(true);
-    } catch (error: any) {
-      setToastMessage(error.message || 'Failed to send reset email. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
+      setToastMessage(errorMessage);
       setToastColor('danger');
       setShowToast(true);
     } finally {

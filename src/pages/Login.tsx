@@ -48,10 +48,11 @@ const Login: React.FC = () => {
       setShowToast(true);
       
       setTimeout(() => {
-        history.replace('/tab1');
+        history.replace('/tabs/home');
       }, 500);
-    } catch (error: any) {
-      setToastMessage(error.message || 'Login failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setToastMessage(errorMessage);
       setToastColor('danger');
       setShowToast(true);
     } finally {

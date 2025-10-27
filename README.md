@@ -115,7 +115,7 @@ AmbulanceRiderApp/
 │   │   ├── Profile.tsx            # User profile
 │   │   ├── Tab1.tsx               # Home tab
 │   │   ├── Tab2.tsx               # Services tab
-│   │   └── Tab3.tsx               # History tab
+│   │   └── Settings.tsx               # History tab
 │   ├── utils/
 │   │   ├── validators.ts          # Validation functions
 │   │   ├── formatters.ts          # Formatting utilities
@@ -150,7 +150,7 @@ AmbulanceRiderApp/
 Create a `.env` file:
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 VITE_APP_NAME=Ambulance Rider App
 VITE_APP_VERSION=1.0.0
 ```
@@ -161,7 +161,7 @@ Edit `src/config/api.config.ts`:
 
 ```typescript
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   TIMEOUT: 30000,
   ENDPOINTS: {
     AUTH: {

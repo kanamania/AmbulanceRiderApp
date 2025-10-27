@@ -1,11 +1,13 @@
 export interface User {
-  id: string;
+  id: number;
+  firstName: string;
+  lastName: string;
   email: string;
-  name: string;
-  role: string;
-  phone?: string;
-  avatar?: string;
-  createdAt?: string;
+  phoneNumber: string;
+  imagePath?: string;
+  imageUrl?: string;
+  roles: string[];
+  createdAt: string;
 }
 
 export interface LoginCredentials {
@@ -14,17 +16,18 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
-  phone?: string;
+  image?: File;
+  roleIds: number[];
 }
 
 export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
+  token: string;
   user: User;
-  expires_in?: number;
 }
 
 export interface AuthContextType {
@@ -32,7 +35,6 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
 }

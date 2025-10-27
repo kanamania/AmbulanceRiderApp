@@ -79,7 +79,7 @@ npm install --save-dev typescript@5.1.6
 
 3. **Verify Backend**:
    ```bash
-   curl -X POST http://localhost:8000/api/auth/login \
+   curl -X POST http://localhost:5000/api/auth/login \
      -H "Content-Type: application/json" \
      -d '{"email":"test@example.com","password":"password123"}'
    ```
@@ -120,7 +120,7 @@ npm install --save-dev typescript@5.1.6
 
 **Symptoms**:
 ```
-Access to fetch at 'http://localhost:8000/api/auth/login' from origin 
+Access to fetch at 'http://localhost:5000/api/auth/login' from origin 
 'http://localhost:5173' has been blocked by CORS policy
 ```
 
@@ -144,7 +144,7 @@ app.use((req, res, next) => {
 
 1. **Check backend is running**:
    ```bash
-   curl http://localhost:8000/api/auth/me
+   curl http://localhost:5000/api/auth/me
    ```
 
 2. **Verify API URL**:
@@ -173,7 +173,7 @@ app.use((req, res, next) => {
 2. **Check base URL**:
    ```typescript
    // Should NOT have trailing slash
-   BASE_URL: 'http://localhost:8000/api'
+   BASE_URL: 'http://localhost:5000/api'
    ```
 
 3. **Verify backend routes**:
@@ -219,7 +219,7 @@ app.use((req, res, next) => {
 
 1. **Check refresh token endpoint**:
    ```bash
-   curl -X POST http://localhost:8000/api/auth/refresh \
+   curl -X POST http://localhost:5000/api/auth/refresh \
      -H "Content-Type: application/json" \
      -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}'
    ```
@@ -446,16 +446,16 @@ localStorage.removeItem('user_data');
 
 ```bash
 # Test login
-curl -X POST http://localhost:8000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Test protected endpoint
-curl -X GET http://localhost:8000/api/auth/me \
+curl -X GET http://localhost:5000/api/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN"
 
 # Test refresh
-curl -X POST http://localhost:8000/api/auth/refresh \
+curl -X POST http://localhost:5000/api/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}'
 ```

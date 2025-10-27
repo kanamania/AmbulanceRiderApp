@@ -33,7 +33,7 @@ cp .env.example .env
 Edit `.env` and set your API URL:
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 **Important**: Replace with your actual backend API URL!

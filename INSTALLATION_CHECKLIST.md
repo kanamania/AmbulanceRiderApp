@@ -55,7 +55,7 @@ cp .env.example .env
 
 **Example `.env`**:
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ### 4. Verify Configuration Files
@@ -81,7 +81,7 @@ VITE_API_URL=http://localhost:8000/api
 ### Test Backend Connection
 ```bash
 # Test if backend is reachable
-curl http://localhost:8000/api/auth/me
+curl http://localhost:5000/api/auth/me
 ```
 
 **Checklist**:

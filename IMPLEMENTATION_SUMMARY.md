@@ -133,7 +133,7 @@ User Navigates → ProtectedRoute → Check isAuthenticated
 ## Environment Variables
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ## API Endpoints Required

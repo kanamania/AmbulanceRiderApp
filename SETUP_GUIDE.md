@@ -22,10 +22,10 @@ cp .env.example .env
 
 Edit `.env` and set your API URL:
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
-**Important:** Replace `http://localhost:8000/api` with your actual backend API URL.
+**Important:** Replace `http://localhost:5000/api` with your actual backend API URL.
 
 ### 3. Start Development Server
 
@@ -78,7 +78,7 @@ src/
 │   ├── Profile.tsx            # User profile
 │   ├── Tab1.tsx               # Home tab
 │   ├── Tab2.tsx               # Services tab
-│   └── Tab3.tsx               # History tab
+│   └── Settings.tsx               # History tab
 └── App.tsx                    # Main app component
 ```
 
