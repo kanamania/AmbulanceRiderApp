@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import AuthService from '../services/auth.service';
 import tripTypeService from '../services/tripType.service';
 import { User, LoginCredentials, AuthContextType } from '../types/auth.types';
 import { TripType } from '../types';
+import { ROLES, getDefaultRoute, hasRole, getHighestRole } from '../utils/role.utils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -15,40 +16,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [tripTypes, setTripTypes] = useState<TripType[]>([]);
 
-  const authService = new AuthService();
   useEffect(() => {
-    // Check if user is already authenticated on mount
     const initAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          const userData = authService.getUserData();
-          if (userData) {
-            setUser(userData);
-            
-            // Load trip types from localStorage or fetch
-            const storedTypes = localStorage.getItem('trip_types');
-            if (storedTypes) {
-              try {
-                setTripTypes(JSON.parse(storedTypes));
-              } catch (e) {
-                console.error('Failed to parse stored trip types:', e);
-              }
-            }
-            
-            // Fetch fresh trip types in background
-            try {
-              const types = await tripTypeService.getActiveTripTypes();
-              setTripTypes(types);
-              localStorage.setItem('trip_types', JSON.stringify(types));
-            } catch (error) {
-              console.error('Failed to fetch trip types:', error);
-            }
-          }
+        const userData = AuthService.getUserData();
+        if (userData) {
+          setUser(userData);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        // Clear invalid auth data
-        await authService.logout();
+        console.error('Error initializing auth:', error);
       } finally {
         setIsLoading(false);
       }
@@ -57,41 +33,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (credentials: LoginCredentials): Promise<void> => {
-    const response = await authService.login(credentials);
+  useEffect(() => {
+    const loadTripTypes = async () => {
+      try {
+        const types = await tripTypeService.getActiveTripTypes();
+        setTripTypes(types);
+      } catch (error) {
+        console.error('Error loading trip types:', error);
+      }
+    };
+
+    if (user) {
+      loadTripTypes();
+    }
+  }, [user]);
+
+  const login = async (credentials: LoginCredentials) => {
+    const response = await AuthService.login(credentials);
     setUser(response.user);
-    
-    // Fetch trip types after successful login
-    try {
-      const types = await tripTypeService.getActiveTripTypes();
-      setTripTypes(types);
-      // Store in localStorage for persistence
-      localStorage.setItem('trip_types', JSON.stringify(types));
-    } catch (error) {
-      console.error('Failed to fetch trip types:', error);
-      // Don't fail login if trip types fetch fails
-    }
   };
 
-
-  const logout = async (): Promise<void> => {
-    try {
-      await authService.logout();
-      setUser(null);
-      setTripTypes([]);
-      localStorage.removeItem('trip_types');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still clear user state even if API call fails
-      setUser(null);
-      setTripTypes([]);
-      localStorage.removeItem('trip_types');
-    }
+  const logout = async () => {
+    await AuthService.logout();
+    setUser(null);
+    setTripTypes([]);
   };
 
-  const updateUser = (updatedUser: User): void => {
+  const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
   };
+
+  // Get user's highest role
+  const getUserRole = useCallback(() => getHighestRole(user), [user]);
+
+  // Get default route based on user's highest role
+  const getDefaultUserRoute = useCallback(() => getDefaultRoute(user), [user]);
+
+  // Check if user has specific role
+  const hasUserRole = useCallback((...roles: string[]) => hasRole(user, ...(roles as any)), [user]);
 
   const value: AuthContextType = {
     user,
@@ -101,12 +80,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateUser,
     tripTypes,
+    hasRole: hasUserRole,
+    getRole: getUserRole,
+    getDefaultRoute: getDefaultUserRoute
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

@@ -1,110 +1,40 @@
 import apiService from './api.service';
 import { API_CONFIG } from '../config/api.config';
-import { Vehicle, VehicleType, CreateVehicleData, UpdateVehicleData } from '../types';
+import { Vehicle, VehicleType, VehicleFilters, VehicleFormData, PaginatedResponse } from '../types';
 
 class VehicleService {
-  // Get all vehicles
-  async getAllVehicles(): Promise<Vehicle[]> {
-    try {
-      const response = await apiService.get<Vehicle[]>(API_CONFIG.ENDPOINTS.VEHICLES.LIST);
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch vehicles';
-      throw new Error(message);
-    }
+  async getVehicles(filters?: VehicleFilters): Promise<PaginatedResponse<Vehicle>> {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.vehicleTypeId) params.append('vehicleTypeId', filters.vehicleTypeId.toString());
+    
+    const response = await apiService.get<PaginatedResponse<Vehicle>>(
+      `${API_CONFIG.ENDPOINTS.VEHICLES.LIST}?${params.toString()}`
+    );
+    return response;
   }
 
-  // Get all vehicle types
+  async getVehicle(id: number): Promise<Vehicle> {
+    return await apiService.get<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.GET(id));
+  }
+
   async getVehicleTypes(): Promise<VehicleType[]> {
-    try {
-      const response = await apiService.get<VehicleType[]>(API_CONFIG.ENDPOINTS.VEHICLES.TYPES);
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch vehicle types';
-      throw new Error(message);
-    }
+    return await apiService.get<VehicleType[]>(API_CONFIG.ENDPOINTS.VEHICLES.TYPES);
   }
 
-  // Get vehicle by ID
-  async getVehicleById(id: number): Promise<Vehicle> {
-    try {
-      const response = await apiService.get<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.GET(id));
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch vehicle';
-      throw new Error(message);
-    }
+  async createVehicle(data: VehicleFormData): Promise<Vehicle> {
+    return await apiService.post<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.CREATE, data);
   }
 
-  // Create new vehicle (Admin, Dispatcher)
-  async createVehicle(data: CreateVehicleData): Promise<Vehicle> {
-    try {
-      const formData = new FormData();
-      formData.append('name', data.name);
-      
-      if (data.image) {
-        formData.append('image', data.image);
-      }
-      
-      data.types.forEach(type => {
-        formData.append('types', type);
-      });
-
-      const response = await apiService.post<Vehicle>(
-        API_CONFIG.ENDPOINTS.VEHICLES.CREATE,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create vehicle';
-      throw new Error(message);
-    }
+  async updateVehicle(id: number, data: Partial<VehicleFormData>): Promise<Vehicle> {
+    return await apiService.put<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.UPDATE(id), data);
   }
 
-  // Update vehicle (Admin, Dispatcher)
-  async updateVehicle(id: number, data: UpdateVehicleData): Promise<Vehicle> {
-    try {
-      const formData = new FormData();
-      
-      if (data.name) formData.append('name', data.name);
-      if (data.image) formData.append('image', data.image);
-      if (data.removeImage !== undefined) formData.append('removeImage', data.removeImage.toString());
-      
-      if (data.types) {
-        data.types.forEach(type => {
-          formData.append('types', type);
-        });
-      }
-
-      const response = await apiService.put<Vehicle>(
-        API_CONFIG.ENDPOINTS.VEHICLES.UPDATE(id),
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update vehicle';
-      throw new Error(message);
-    }
-  }
-
-  // Delete vehicle (Admin only)
   async deleteVehicle(id: number): Promise<void> {
-    try {
-      await apiService.delete(API_CONFIG.ENDPOINTS.VEHICLES.DELETE(id));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete vehicle';
-      throw new Error(message);
-    }
+    await apiService.delete(API_CONFIG.ENDPOINTS.VEHICLES.DELETE(id));
   }
 }
 

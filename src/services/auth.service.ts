@@ -3,7 +3,7 @@ import apiService from './api.service';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
 
-export default class AuthService {
+class AuthService {
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
@@ -113,3 +113,7 @@ export default class AuthService {
     }
   }
 }
+
+// Export a singleton instance
+const authServiceInstance = new AuthService();
+export default authServiceInstance;

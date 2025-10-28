@@ -1,8 +1,34 @@
 import apiService from './api.service';
 import { API_CONFIG } from '../config/api.config';
-import { User, CreateUserData, UpdateUserData } from '../types';
+import { User, CreateUserData, UpdateUserData, PaginatedResponse } from '../types';
+
+interface UserFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+}
 
 class UserService {
+  // Get all users with pagination (Admin, Dispatcher only)
+  async getUsers(filters?: UserFilters): Promise<PaginatedResponse<User>> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+      if (filters?.search) params.append('search', filters.search);
+      if (filters?.role) params.append('role', filters.role);
+      
+      const response = await apiService.get<PaginatedResponse<User>>(
+        `${API_CONFIG.ENDPOINTS.USERS.LIST}?${params.toString()}`
+      );
+      return response;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch users';
+      throw new Error(message);
+    }
+  }
+
   // Get all users (Admin, Dispatcher only)
   async getAllUsers(): Promise<User[]> {
     try {
@@ -15,7 +41,7 @@ class UserService {
   }
 
   // Get user by ID
-  async getUserById(id: number): Promise<User> {
+  async getUser(id: number): Promise<User> {
     try {
       const response = await apiService.get<User>(API_CONFIG.ENDPOINTS.USERS.GET(id));
       return response;
@@ -23,6 +49,11 @@ class UserService {
       const message = error instanceof Error ? error.message : 'Failed to fetch user';
       throw new Error(message);
     }
+  }
+
+  // Get user by ID (alias)
+  async getUserById(id: number): Promise<User> {
+    return this.getUser(id);
   }
 
   // Create new user (Admin only)

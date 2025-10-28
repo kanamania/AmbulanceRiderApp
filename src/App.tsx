@@ -21,6 +21,9 @@ import ResetPassword from './pages/ResetPassword';
 import Settings from "./pages/Settings";
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import AdminRoutes from './routes/admin.routes';
+import './i18n'; // Initialize i18n
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -56,14 +59,20 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <AuthProvider>
-      <IonReactRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <IonReactRouter>
         <IonRouterOutlet>
           {/* Public Routes */}
           <Route exact path="/login" component={Login} />
           <Route exact path="/register" component={Register} />
           <Route exact path="/forgot-password" component={ForgotPassword} />
           <Route exact path="/reset-password" component={ResetPassword} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin">
+            <AdminRoutes />
+          </Route>
           
           {/* Protected Routes with Tabs */}
           <Route path="/tabs">
@@ -120,8 +129,9 @@ const App: React.FC = () => (
             <Redirect to="/tabs/home" />
           </Route>
         </IonRouterOutlet>
-      </IonReactRouter>
-    </AuthProvider>
+        </IonReactRouter>
+      </AuthProvider>
+    </ThemeProvider>
   </IonApp>
 );
 

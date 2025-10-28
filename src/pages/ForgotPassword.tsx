@@ -32,7 +32,6 @@ const ForgotPassword: React.FC = () => {
   const [toastColor, setToastColor] = useState<'danger' | 'success'>('danger');
   const [emailSent, setEmailSent] = useState(false);
 
-  const authService = new AuthService();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -56,7 +55,7 @@ const ForgotPassword: React.FC = () => {
       // Collect telemetry data
       const telemetry = await TelemetryCollector.collectBasicTelemetry();
       
-      await authService.forgotPassword(email, telemetry);
+      await AuthService.forgotPassword(email, telemetry);
       setEmailSent(true);
       setToastMessage('Password reset instructions sent to your email');
       setToastColor('success');

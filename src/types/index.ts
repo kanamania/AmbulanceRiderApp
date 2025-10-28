@@ -1,6 +1,7 @@
 // Re-export auth types
 export * from './auth.types';
 export * from './telemetry.types';
+export * from './vehicle.types';
 
 // Location types
 export interface Location {
@@ -58,34 +59,6 @@ export interface UpdateRouteData {
   distance?: number;
   estimatedDuration?: number;
   description?: string;
-}
-
-// Vehicle types
-export interface VehicleType {
-  id: number;
-  name: string;
-}
-
-export interface Vehicle {
-  id: number;
-  name: string;
-  imagePath?: string;
-  imageUrl?: string;
-  types: string[];
-  createdAt: string;
-}
-
-export interface CreateVehicleData {
-  name: string;
-  image?: File;
-  types: string[];
-}
-
-export interface UpdateVehicleData {
-  name?: string;
-  image?: File;
-  removeImage?: boolean;
-  types?: string[];
 }
 
 // User management types (for admin)

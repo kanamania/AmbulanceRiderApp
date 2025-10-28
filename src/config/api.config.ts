@@ -1,11 +1,47 @@
 // API Configuration
 export const API_CONFIG = {
-  // Update this with your actual API URL
+  // Base URL for API requests
   BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  
+  // Request timeout in milliseconds
   TIMEOUT: 30000,
   
-  // API Endpoints
+  // Endpoints configuration
   ENDPOINTS: {
+    // Dashboard endpoints
+    DASHBOARD: {
+      STATS: '/dashboard/stats',
+      ACTIVITIES: '/dashboard/activities',
+      HEALTH: '/dashboard/health',
+      TRIP_STATS: '/dashboard/trip-stats',
+      REVENUE: '/dashboard/revenue',
+    },
+    
+    // Admin endpoints
+    ADMIN: {
+      USERS: {
+        BASE: '/admin/users',
+        BY_ID: (id: string | number) => `/admin/users/${id}`,
+        ROLES: '/admin/users/roles',
+        STATUS: (id: string | number) => `/admin/users/${id}/status`,
+      },
+      VEHICLES: {
+        BASE: '/admin/vehicles',
+        BY_ID: (id: string | number) => `/admin/vehicles/${id}`,
+        MAINTENANCE: (id: string | number) => `/admin/vehicles/${id}/maintenance`,
+      },
+      TRIPS: {
+        BASE: '/admin/trips',
+        BY_ID: (id: string | number) => `/admin/trips/${id}`,
+        ASSIGN_DRIVER: (id: string | number) => `/admin/trips/${id}/assign-driver`,
+      },
+      SYSTEM: {
+        SETTINGS: '/admin/system/settings',
+        LOGS: '/admin/system/logs',
+        BACKUP: '/admin/system/backup',
+      },
+    },
+    
     AUTH: {
       LOGIN: '/auth/login',
       REGISTER: '/auth/register',

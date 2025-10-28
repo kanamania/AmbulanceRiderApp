@@ -15,11 +15,14 @@ import {
   IonSpinner,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import AppHeader from '../components/AppHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './Login.css';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const history = useHistory();
   const { login } = useAuth();
   
@@ -34,7 +37,7 @@ const Login: React.FC = () => {
     e.preventDefault();
 
     if (!email || !password) {
-      setToastMessage('Please fill in all fields');
+      setToastMessage(t('validation.required'));
       setToastColor('danger');
       setShowToast(true);
       return;
@@ -47,16 +50,14 @@ const Login: React.FC = () => {
       const telemetry = await TelemetryCollector.collectBasicTelemetry();
       
       await login({ email, password, telemetry });
-      setToastMessage('Login successful!');
+      setToastMessage(t('auth.loginSuccess'));
       setToastColor('success');
-      setShowToast(true);
       
       setTimeout(() => {
         history.replace('/tabs/home');
       }, 500);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
-      setToastMessage(errorMessage);
+    } catch (error: any) {
+      setToastMessage(error.message || t('auth.loginError'));
       setToastColor('danger');
       setShowToast(true);
     } finally {
@@ -66,20 +67,21 @@ const Login: React.FC = () => {
 
   return (
     <IonPage>
+      <AppHeader title={t('auth.loginTitle')} />
       <IonContent className="ion-padding login-content">
         <div className="login-container">
           <IonCard className="login-card">
             <IonCardHeader>
               <IonCardTitle className="ion-text-center">
                 <h1>Ambulance Rider</h1>
-                <p>Sign in to continue</p>
+                <p>{t('auth.loginTitle')}</p>
               </IonCardTitle>
             </IonCardHeader>
             
             <IonCardContent>
               <form onSubmit={handleLogin}>
                 <IonItem>
-                  <IonLabel position="floating">Email</IonLabel>
+                  <IonLabel position="floating">{t('auth.email')}</IonLabel>
                   <IonInput
                     type="email"
                     value={email}
@@ -90,7 +92,7 @@ const Login: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="floating">Password</IonLabel>
+                  <IonLabel position="floating">{t('auth.password')}</IonLabel>
                   <IonInput
                     type="password"
                     value={password}
@@ -106,7 +108,7 @@ const Login: React.FC = () => {
                     style={{ cursor: 'pointer', textDecoration: 'underline', fontSize: '14px' }}
                     onClick={() => history.push('/forgot-password')}
                   >
-                    Forgot Password?
+                    {t('auth.forgotPassword')}
                   </IonText>
                 </div>
 
@@ -116,18 +118,18 @@ const Login: React.FC = () => {
                   className="ion-margin-top"
                   disabled={isLoading}
                 >
-                  {isLoading ? <IonSpinner name="crescent" /> : 'Login'}
+                  {isLoading ? <IonSpinner name="crescent" /> : t('common.login')}
                 </IonButton>
 
                 <div className="ion-text-center ion-margin-top">
                   <IonText color="medium">
-                    Don't have an account?{' '}
+                    {t('auth.dontHaveAccount')}{' '}
                     <IonText
                       color="primary"
                       style={{ cursor: 'pointer', textDecoration: 'underline' }}
                       onClick={() => history.push('/register')}
                     >
-                      Register here
+                      {t('auth.registerHere')}
                     </IonText>
                   </IonText>
                 </div>

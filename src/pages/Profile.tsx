@@ -27,9 +27,9 @@ const Profile: React.FC = () => {
   const history = useHistory();
   const { user, updateUser, logout } = useAuth();
   
-  const [name, setName] = useState(user?.name || '');
+  const [name, setName] = useState(`${user?.firstName || ''} ${user?.lastName || ''}`.trim());
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState(user?.phoneNumber || '');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -51,9 +51,10 @@ const Profile: React.FC = () => {
       // For now, we'll just update the local state
       const updatedUser = {
         ...user!,
-        name,
+        firstName: name.split(' ')[0] || '',
+        lastName: name.split(' ').slice(1).join(' ') || '',
         email,
-        phone,
+        phoneNumber: phone,
       };
       
       updateUser(updatedUser);
@@ -62,8 +63,9 @@ const Profile: React.FC = () => {
       setToastColor('success');
       setShowToast(true);
       setIsEditing(false);
-    } catch (error: any) {
-      setToastMessage(error.message || 'Failed to update profile');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      setToastMessage(errorMessage);
       setToastColor('danger');
       setShowToast(true);
     } finally {
@@ -72,9 +74,9 @@ const Profile: React.FC = () => {
   };
 
   const handleCancel = () => {
-    setName(user?.name || '');
+    setName(`${user?.firstName || ''} ${user?.lastName || ''}`.trim());
     setEmail(user?.email || '');
-    setPhone(user?.phone || '');
+    setPhone(user?.phoneNumber || '');
     setIsEditing(false);
   };
 
@@ -106,7 +108,7 @@ const Profile: React.FC = () => {
               <div className="profile-avatar-container">
                 <IonAvatar className="profile-avatar-large">
                   <img 
-                    src={user?.avatar || 'https://ionicframework.com/docs/img/demos/avatar.svg'} 
+                    src={user?.imageUrl || 'https://ionicframework.com/docs/img/demos/avatar.svg'} 
                     alt="Profile" 
                   />
                 </IonAvatar>
@@ -144,7 +146,7 @@ const Profile: React.FC = () => {
               <IonItem>
                 <IonLabel position="stacked">Role</IonLabel>
                 <IonInput
-                  value={user?.role || 'User'}
+                  value={user?.roles?.[0] || 'User'}
                   disabled
                 />
               </IonItem>

@@ -1,0 +1,82 @@
+/* Admin Layout Styles */
+
+/* Sidebar Styling */
+ion-split-pane {
+  --side-width: 300px;
+  --side-max-width: 300px;
+}
+
+/* User info section at bottom of sidebar */
+.user-info {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: var(--ion-color-light);
+  border-top: 1px solid var(--ion-color-medium);
+  padding: 10px 0;
+}
+
+.user-role {
+  font-size: 0.8em;
+  color: var(--ion-color-medium);
+  text-transform: capitalize;
+  margin-top: 4px;
+}
+
+/* Menu item styling */
+ion-menu ion-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 50px;
+}
+
+ion-menu ion-icon {
+  margin-right: 12px;
+  color: var(--ion-color-medium);
+}
+
+/* Active menu item */
+ion-menu ion-item.selected {
+  --background: rgba(var(--ion-color-primary-rgb), 0.1);
+  --color: var(--ion-color-primary);
+}
+
+ion-menu ion-item.selected ion-icon {
+  color: var(--ion-color-primary);
+}
+
+/* Header styling */
+ion-header ion-toolbar {
+  --background: var(--ion-color-primary);
+  --color: white;
+}
+
+/* Content area */
+ion-content {
+  --background: var(--ion-color-light);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  ion-split-pane {
+    --side-width: 250px;
+    --side-max-width: 250px;
+  }
+}
+
+/* Animation for menu toggle */
+ion-menu-toggle {
+  transition: all 0.3s ease;
+}
+
+ion-menu-toggle:hover {
+  background: rgba(var(--ion-color-primary-rgb), 0.05);
+}
+
+/* Loading state */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}

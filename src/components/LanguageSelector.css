@@ -1,0 +1,89 @@
+.language-selector {
+  position: relative;
+  display: inline-block;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--ion-color-light);
+  cursor: pointer;
+  z-index: 9999;
+}
+
+.current-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+
+.language-selector:hover .current-flag {
+  transform: scale(1.1);
+}
+
+.language-options {
+  position: fixed;
+  top: auto;
+  right: 8px;
+  margin-top: 4px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+
+.language-selector:hover .language-options {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.language-option {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.language-option:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.language-option.active {
+  background-color: rgba(var(--ion-color-primary-rgb), 0.1);
+}
+
+.language-flag {
+  width: 28px;
+  height: 21px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode styles */
+.dark .language-selector,
+.dark .language-options {
+  background: var(--ion-color-step-100);
+}
+
+.dark .language-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .language-option.active {
+  background-color: rgba(var(--ion-color-primary-rgb), 0.2);
+}

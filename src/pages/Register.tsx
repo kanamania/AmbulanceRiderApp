@@ -15,12 +15,11 @@ import {
   IonSpinner,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import authService from '../services/auth.service';
 import './Register.css';
 
 const Register: React.FC = () => {
   const history = useHistory();
-  const { register } = useAuth();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,14 +58,22 @@ const Register: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await register({ name, email, password, phone });
+      const [firstName, ...lastNameParts] = name.split(' ');
+      await authService.register({
+        firstName,
+        lastName: lastNameParts.join(' ') || '',
+        email,
+        phoneNumber: phone,
+        password,
+        roleIds: [4] // Default to User role
+      });
       setToastMessage('Registration successful!');
       setToastColor('success');
       setShowToast(true);
       
       setTimeout(() => {
-        history.replace('/tab1');
-      }, 500);
+        history.replace('/login');
+      }, 1500);
     } catch (error: any) {
       setToastMessage(error.message || 'Registration failed. Please try again.');
       setToastColor('danger');

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   IonContent, 
-  IonHeader, 
   IonPage, 
-  IonTitle, 
-  IonToolbar, 
   IonItem, 
   IonLabel, 
   IonSelect, 
@@ -25,6 +22,8 @@ import {
   IonToast
 } from '@ionic/react';
 import { locationOutline, navigateOutline, mapOutline } from 'ionicons/icons';
+import { useTranslation } from 'react-i18next';
+import AppHeader from '../components/AppHeader';
 import TripMap from '../components/TripMap';
 import LocationPicker from '../components/LocationPicker';
 import DynamicFormField from '../components/DynamicFormField';
@@ -52,6 +51,7 @@ interface TripFormData {
 }
 
 const Home: React.FC = () => {
+  const { t } = useTranslation();
   const { tripTypes } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedTripType, setSelectedTripType] = useState<TripType | null>(null);
@@ -272,14 +272,10 @@ const Home: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>Book Ambulance</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <AppHeader title={t('trip.bookTrip')} />
       
       <IonContent className="ion-padding">
-        <IonLoading isOpen={loading || submitting} message={submitting ? 'Creating trip...' : 'Loading...'} />
+        <IonLoading isOpen={loading || submitting} message={submitting ? t('common.loading') : t('common.loading')} />
         
         <IonCard>
           <IonCardHeader>

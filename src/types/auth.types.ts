@@ -10,8 +10,11 @@ export interface User {
   imagePath?: string;
   imageUrl?: string;
   roles: string[];
+  isActive?: boolean;
   createdAt: string;
 }
+
+export type UserRole = 'Admin' | 'Dispatcher' | 'Driver' | 'User';
 
 export interface LoginCredentials {
   email: string;
@@ -43,4 +46,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   tripTypes: TripType[];
+  hasRole: (...roles: string[]) => boolean;
+  getRole: () => string | null;
+  getDefaultRoute: () => string;
 }

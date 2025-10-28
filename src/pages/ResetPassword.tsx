@@ -92,8 +92,7 @@ const ResetPassword: React.FC = () => {
       // Collect telemetry data
       const telemetry = await TelemetryCollector.collectBasicTelemetry();
       
-      const authService = new AuthService();
-      await authService.resetPassword(token, password, email, telemetry);
+      await AuthService.resetPassword(token, password, email, telemetry);
       setResetSuccess(true);
       setToastMessage('Password reset successfully!');
       setToastColor('success');
