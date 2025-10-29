@@ -69,14 +69,19 @@ class AuthService {
 
   // Set authentication data
   private setAuthData(authResponse: AuthResponse): void {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, authResponse.token);
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, authResponse.accessToken);
     localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(authResponse.user));
+    // Store refresh token if provided
+    if (authResponse.refreshToken) {
+      localStorage.setItem('refresh_token', authResponse.refreshToken);
+    }
   }
 
   // Clear authentication data
   private clearAuthData(): void {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    localStorage.removeItem('refresh_token');
   }
 
   // Forgot password - Send reset email

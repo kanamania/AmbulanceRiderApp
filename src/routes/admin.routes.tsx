@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Redirect, Switch } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { IonRouterOutlet } from '@ionic/react';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { ROLES } from '../utils/role.utils';
@@ -17,82 +17,78 @@ import TripDetails from '../pages/admin/TripDetails';
 const AdminRoutes: React.FC = () => {
   return (
     <IonRouterOutlet id="main-content">
-      <Switch>
+      <Routes>
         {/* Dashboard */}
-        <Route exact path="/admin/dashboard">
+        <Route path="dashboard" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <Dashboard />
           </ProtectedRoute>
-        </Route>
+        } />
 
         {/* User Management */}
-        <Route exact path="/admin/users">
+        <Route path="users" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <UserManagement />
           </ProtectedRoute>
-        </Route>
+        } />
 
-        <Route exact path="/admin/users/new">
+        <Route path="users/new" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <UserEdit />
           </ProtectedRoute>
-        </Route>
+        } />
 
-        <Route exact path="/admin/users/:id">
+        <Route path="users/:id" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <UserEdit />
           </ProtectedRoute>
-        </Route>
+        } />
 
         {/* Vehicle Management */}
-        <Route exact path="/admin/vehicles">
+        <Route path="vehicles" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <VehicleManagement />
           </ProtectedRoute>
-        </Route>
+        } />
 
-        <Route exact path="/admin/vehicles/new">
+        <Route path="vehicles/new" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <VehicleEdit />
           </ProtectedRoute>
-        </Route>
+        } />
 
-        <Route exact path="/admin/vehicles/:id">
+        <Route path="vehicles/:id" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <VehicleEdit />
           </ProtectedRoute>
-        </Route>
+        } />
 
         {/* Trip Management */}
-        <Route exact path="/admin/trips">
+        <Route path="trips" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <TripManagement />
           </ProtectedRoute>
-        </Route>
+        } />
 
-        <Route exact path="/admin/trips/:id">
+        <Route path="trips/:id" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <TripDetails />
           </ProtectedRoute>
-        </Route>
+        } />
 
         {/* System Settings */}
-        <Route exact path="/admin/settings">
+        <Route path="settings" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <SystemSettings />
           </ProtectedRoute>
-        </Route>
+        } />
 
         {/* Default admin route */}
-        <Route exact path="/admin">
-          <Redirect to="/admin/dashboard" />
-        </Route>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* 404 - Not Found */}
-        <Route>
-          <Redirect to="/admin/dashboard" />
-        </Route>
-      </Switch>
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
     </IonRouterOutlet>
   );
 };

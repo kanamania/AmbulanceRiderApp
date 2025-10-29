@@ -13,7 +13,7 @@ import {
   useIonToast
 } from '@ionic/react';
 import { add, create, trash } from 'ionicons/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from '../../layouts/AdminLayout';
 import { User } from '../../types/auth.types';
@@ -30,7 +30,7 @@ const UserManagement: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const itemsPerPage = 10;
 

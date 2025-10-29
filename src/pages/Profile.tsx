@@ -19,12 +19,12 @@ import {
   IonIcon,
 } from '@ionic/react';
 import { logOutOutline } from 'ionicons/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Profile.css';
 
 const Profile: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user, updateUser, logout } = useAuth();
   
   const [name, setName] = useState(`${user?.firstName || ''} ${user?.lastName || ''}`.trim());
@@ -82,7 +82,7 @@ const Profile: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    history.replace('/login');
+    navigate('/login', { replace: true });
   };
 
   return (

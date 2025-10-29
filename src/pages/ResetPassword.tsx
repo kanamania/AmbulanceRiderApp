@@ -16,14 +16,14 @@ import {
   IonIcon,
 } from '@ionic/react';
 import { lockClosedOutline, checkmarkCircleOutline } from 'ionicons/icons';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import { validators } from '../utils/validators';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './ResetPassword.css';
 
 const ResetPassword: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   
   const [token, setToken] = useState('');
@@ -100,7 +100,7 @@ const ResetPassword: React.FC = () => {
       
       // Redirect to login after 2 seconds
       setTimeout(() => {
-        history.push('/login');
+        navigate('/login');
       }, 2000);
     } catch (error: any) {
       setToastMessage(error.message || 'Failed to reset password. Please try again.');
@@ -183,7 +183,7 @@ const ResetPassword: React.FC = () => {
                       <IonText
                         color="primary"
                         style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                        onClick={() => history.push('/login')}
+                        onClick={() => navigate('/login')}
                       >
                         Login here
                       </IonText>
@@ -205,7 +205,7 @@ const ResetPassword: React.FC = () => {
                   </p>
                   <IonButton
                     expand="block"
-                    onClick={() => history.push('/login')}
+                    onClick={() => navigate('/login')}
                     className="ion-margin-top"
                   >
                     Go to Login

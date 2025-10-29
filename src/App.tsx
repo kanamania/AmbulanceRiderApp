@@ -1,4 +1,4 @@
-import { Redirect, Route } from 'react-router-dom';
+import {Navigate, Route, Routes, BrowserRouter} from 'react-router-dom';
 import {
   IonApp,
   IonIcon,
@@ -9,7 +9,6 @@ import {
   IonTabs,
   setupIonicReact
 } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
 import {personCircle, settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
 import Home from './pages/Home';
 import Activity from './pages/Activity';
@@ -61,75 +60,56 @@ const App: React.FC = () => (
   <IonApp>
     <ThemeProvider>
       <AuthProvider>
-        <IonReactRouter>
-        <IonRouterOutlet>
-          {/* Public Routes */}
-          <Route exact path="/login" component={Login} />
-          <Route exact path="/register" component={Register} />
-          <Route exact path="/forgot-password" component={ForgotPassword} />
-          <Route exact path="/reset-password" component={ResetPassword} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin">
-            <AdminRoutes />
-          </Route>
-          
-          {/* Protected Routes with Tabs */}
-          <Route path="/tabs">
-            <ProtectedRoute>
-              <IonTabs>
-                <IonRouterOutlet>
-                  <Route exact path="/tabs/home">
-                    <Home />
-                  </Route>
-                  <Route exact path="/tabs/activity">
-                    <Activity />
-                  </Route>
-                  <Route exact path="/tabs/settings">
-                    <Settings />
-                  </Route>
-                  <Route exact path="/tabs/profile">
-                    <Profile />
-                  </Route>
-                  <Route exact path="/tabs">
-                    <Redirect to="/tabs/home" />
-                  </Route>
-                </IonRouterOutlet>
-                <IonTabBar slot="bottom">
-                  <IonTabButton tab="home" href="/tabs/home">
-                    <IonIcon aria-hidden="true" icon={homeSharp} />
-                    <IonLabel>Home</IonLabel>
-                  </IonTabButton>
-                  <IonTabButton tab="activity" href="/tabs/activity">
-                    <IonIcon aria-hidden="true" icon={statsChart} />
-                    <IonLabel>Activity</IonLabel>
-                  </IonTabButton>
-                  <IonTabButton tab="profile" href="/tabs/profile">
-                    <IonIcon aria-hidden="true" icon={personCircle} />
-                    <IonLabel>Profile</IonLabel>
-                  </IonTabButton>
-                  <IonTabButton tab="settings" href="/tabs/settings">
-                    <IonIcon aria-hidden="true" icon={settingsSharp} />
-                    <IonLabel>Settings</IonLabel>
-                  </IonTabButton>
-                </IonTabBar>
-              </IonTabs>
-            </ProtectedRoute>
-          </Route>
-          
-          {/* Profile Route (Protected, outside tabs) */}
-          <Route exact path="/tabs/profile">
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          </Route>
-          
-          {/* Default Redirect */}
-          <Route exact path="/">
-            <Redirect to="/tabs/home" />
-          </Route>
-        </IonRouterOutlet>
-        </IonReactRouter>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/*" element={<AdminRoutes />} />
+            
+            {/* Protected Routes with Tabs */}
+            <Route path="/tabs/*" element={
+              <ProtectedRoute>
+                <IonTabs>
+                  <IonRouterOutlet>
+                    <Routes>
+                      <Route path="home" element={<Home />} />
+                      <Route path="activity" element={<Activity />} />
+                      <Route path="settings" element={<Settings />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route index element={<Navigate to="/tabs/home" replace />} />
+                    </Routes>
+                  </IonRouterOutlet>
+                  <IonTabBar slot="bottom">
+                    <IonTabButton tab="home" href="/tabs/home">
+                      <IonIcon aria-hidden="true" icon={homeSharp} />
+                      <IonLabel>Home</IonLabel>
+                    </IonTabButton>
+                    <IonTabButton tab="activity" href="/tabs/activity">
+                      <IonIcon aria-hidden="true" icon={statsChart} />
+                      <IonLabel>Activity</IonLabel>
+                    </IonTabButton>
+                    <IonTabButton tab="profile" href="/tabs/profile">
+                      <IonIcon aria-hidden="true" icon={personCircle} />
+                      <IonLabel>Profile</IonLabel>
+                    </IonTabButton>
+                    <IonTabButton tab="settings" href="/tabs/settings">
+                      <IonIcon aria-hidden="true" icon={settingsSharp} />
+                      <IonLabel>Settings</IonLabel>
+                    </IonTabButton>
+                  </IonTabBar>
+                </IonTabs>
+              </ProtectedRoute>
+            } />
+            
+            {/* Default Redirect */}
+            <Route path="/" element={<Navigate to="/tabs/home" replace />} />
+          </Routes>
+        </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   </IonApp>

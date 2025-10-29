@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
@@ -14,7 +15,6 @@ import {
   IonCardTitle,
   IonSpinner,
 } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,7 @@ import './Login.css';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { login } = useAuth();
   
   const [email, setEmail] = useState('');
@@ -35,7 +35,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log("Login submitted")
     if (!email || !password) {
       setToastMessage(t('validation.required'));
       setToastColor('danger');
@@ -54,10 +54,11 @@ const Login: React.FC = () => {
       setToastColor('success');
       
       setTimeout(() => {
-        history.replace('/tabs/home');
+        navigate('/tabs/home');
       }, 500);
-    } catch (error: any) {
-      setToastMessage(error.message || t('auth.loginError'));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : t('auth.loginError');
+      setToastMessage(errorMessage);
       setToastColor('danger');
       setShowToast(true);
     } finally {
@@ -106,7 +107,7 @@ const Login: React.FC = () => {
                   <IonText
                     color="primary"
                     style={{ cursor: 'pointer', textDecoration: 'underline', fontSize: '14px' }}
-                    onClick={() => history.push('/forgot-password')}
+                    onClick={() => navigate('/forgot-password')}
                   >
                     {t('auth.forgotPassword')}
                   </IonText>
@@ -127,7 +128,7 @@ const Login: React.FC = () => {
                     <IonText
                       color="primary"
                       style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => history.push('/register')}
+                      onClick={() => navigate('/register')}
                     >
                       {t('auth.registerHere')}
                     </IonText>

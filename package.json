@@ -1,5 +1,5 @@
 {
-  "name": "AmbulanceRiderApp",
+  "name": "ambulance-rider",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -15,10 +15,7 @@
     "@capacitor/core": "7.4.4",
     "@hookform/resolvers": "^5.2.2",
     "@ionic/react": "^8.5.0",
-    "@ionic/react-router": "^8.5.0",
     "@types/leaflet": "^1.9.21",
-    "@types/react-router": "^5.1.20",
-    "@types/react-router-dom": "^5.3.3",
     "axios": "^1.6.0",
     "i18next": "^25.6.0",
     "i18next-browser-languagedetector": "^8.2.0",
@@ -30,14 +27,13 @@
     "react-hook-form": "^7.65.0",
     "react-i18next": "^16.2.1",
     "react-leaflet": "^5.0.0",
-    "react-router": "^5.3.4",
-    "react-router-dom": "^5.3.4",
+    "react-router": "^7.9.4",
+    "react-router-dom": "^7.9.4",
     "yup": "^1.7.1"
   },
   "devDependencies": {
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.4.3",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
@@ -53,11 +49,11 @@
     "terser": "^5.4.0",
     "typescript": "^5.1.6",
     "typescript-eslint": "^8.24.0",
-    "vite": "~5.2.0",
-    "vitest": "^0.34.6"
+    "vite": "~7.1.12",
+    "vitest": "^4.0.4"
   },
   "overrides": {
     "rollup": "4.44.0"
   },
-  "description": "An Ionic project"
+  "description": "A Ride Management App"
 }

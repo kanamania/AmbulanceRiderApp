@@ -24,7 +24,7 @@ import {
   IonText
 } from '@ionic/react';
 import { add, car, create, trash, refresh, checkmarkCircle, alertCircle } from 'ionicons/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Vehicle, VehicleStatus } from '../../types/vehicle.types';
@@ -42,7 +42,7 @@ const VehicleManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const itemsPerPage = 10;
 

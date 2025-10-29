@@ -36,7 +36,7 @@ import {
   eye,
   create
 } from 'ionicons/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Trip } from '../../types';
 import { tripService } from '../../services';
@@ -52,7 +52,7 @@ const TripManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const history = useHistory();
+  const navigate = useNavigate();
   const itemsPerPage = 10;
 
   const loadTrips = async (pageNum: number = 1, refresh: boolean = false) => {

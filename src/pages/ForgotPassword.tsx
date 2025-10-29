@@ -16,14 +16,14 @@ import {
   IonIcon,
 } from '@ionic/react';
 import { arrowBackOutline, mailOutline } from 'ionicons/icons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import { validators } from '../utils/validators';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './ForgotPassword.css';
 
 const ForgotPassword: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +79,7 @@ const ForgotPassword: React.FC = () => {
               <IonButton
                 fill="clear"
                 size="small"
-                onClick={() => history.goBack()}
+                onClick={() => navigate(-1)}
                 className="back-button"
               >
                 <IonIcon icon={arrowBackOutline} slot="start" />
@@ -129,7 +129,7 @@ const ForgotPassword: React.FC = () => {
                       <IonText
                         color="primary"
                         style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                        onClick={() => history.push('/login')}
+                        onClick={() => navigate('/login')}
                       >
                         Login here
                       </IonText>
@@ -159,7 +159,7 @@ const ForgotPassword: React.FC = () => {
                   </p>
                   <IonButton
                     expand="block"
-                    onClick={() => history.push('/login')}
+                    onClick={() => navigate('/login')}
                     className="ion-margin-top"
                   >
                     Back to Login

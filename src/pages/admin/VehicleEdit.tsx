@@ -44,7 +44,7 @@ import {
   informationCircle,
   add
 } from 'ionicons/icons';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -94,7 +94,7 @@ interface VehicleFormData {
 const VehicleEdit: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
-  const history = useHistory();
+  const navigate = useNavigate();
   const [presentToast] = useIonToast();
   const [presentLoading, dismissLoading] = useIonLoading();
   const [isLoading, setIsLoading] = useState(isEdit);
@@ -143,7 +143,7 @@ const VehicleEdit: React.FC = () => {
         
         if (isEdit && id) {
           // Load vehicle data
-          const vehicleData = await vehicleService.getVehicle(parseInt(id));
+          const vehicleData = await vehicleService.getVehicle(parseInt(id!));
           setVehicle(vehicleData);
           
           // Set form values
@@ -175,13 +175,13 @@ const VehicleEdit: React.FC = () => {
           duration: 3000,
           color: 'danger'
         });
-        history.push('/admin/vehicles');
+        navigate('/admin/vehicles');
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [id, isEdit, history, presentToast, reset]);
+  }, [id, isEdit, navigate, presentToast, reset]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -212,7 +212,7 @@ const VehicleEdit: React.FC = () => {
       
       if (isEdit && id) {
         // Update existing vehicle
-        await vehicleService.updateVehicle(parseInt(id), vehicleData as any);
+        await vehicleService.updateVehicle(parseInt(id!), vehicleData as any);
         presentToast({
           message: 'Vehicle updated successfully',
           duration: 3000,
@@ -230,7 +230,7 @@ const VehicleEdit: React.FC = () => {
         });
       }
       
-      history.push('/admin/vehicles');
+      navigate('/admin/vehicles');
     } catch (error: any) {
       console.error('Error saving vehicle:', error);
       presentToast({
@@ -249,7 +249,7 @@ const VehicleEdit: React.FC = () => {
     
     try {
       await presentLoading('Deleting vehicle...');
-      await vehicleService.deleteVehicle(parseInt(id));
+      await vehicleService.deleteVehicle(parseInt(id!));
       
       presentToast({
         message: 'Vehicle deleted successfully',
@@ -258,7 +258,7 @@ const VehicleEdit: React.FC = () => {
         icon: checkmarkCircle
       });
       
-      history.push('/admin/vehicles');
+      navigate('/admin/vehicles');
     } catch (error) {
       console.error('Error deleting vehicle:', error);
       presentToast({
@@ -654,7 +654,7 @@ const VehicleEdit: React.FC = () => {
               type="button" 
               fill="clear" 
               color="medium"
-              onClick={() => history.goBack()}
+              onClick={() => navigate(-1)}
               disabled={isSubmitting}
             >
               Cancel

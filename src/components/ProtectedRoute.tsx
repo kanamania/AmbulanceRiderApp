@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { IonSpinner, IonContent, IonPage, IonAlert } from '@ionic/react';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/role.utils';
@@ -58,7 +58,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Redirect to={{ pathname: '/login', state: { from: location } }} />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // If no specific roles required, allow access

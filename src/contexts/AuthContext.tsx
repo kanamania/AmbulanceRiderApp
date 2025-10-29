@@ -20,8 +20,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initAuth = async () => {
       try {
         const userData = AuthService.getUserData();
-        if (userData) {
-          setUser(userData);
+        // Only restore user if token is still valid
+        if (userData && AuthService.isAuthenticated()) {
+          // Load trip types for authenticated users to verify token is valid
+          try {
+            const types = await tripTypeService.getActiveTripTypes();
+            setTripTypes(types);
+            // Only set user after successful API call to verify token works
+            setUser(userData);
+          } catch (error) {
+            console.error('Error loading trip types:', error);
+            // If trip types fail to load, user might have invalid token
+            // Clear auth data and reset user
+            AuthService.logout();
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -33,24 +46,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  useEffect(() => {
-    const loadTripTypes = async () => {
-      try {
-        const types = await tripTypeService.getActiveTripTypes();
-        setTripTypes(types);
-      } catch (error) {
-        console.error('Error loading trip types:', error);
-      }
-    };
-
-    if (user) {
-      loadTripTypes();
-    }
-  }, [user]);
-
   const login = async (credentials: LoginCredentials) => {
     const response = await AuthService.login(credentials);
+    console.log('Login response:', response);
+    console.log('Token set:', AuthService.getAccessToken());
     setUser(response.user);
+    
+    // Load trip types after successful login
+    // The token is already set by AuthService.login() before this point
+    try {
+      const types = await tripTypeService.getActiveTripTypes();
+      setTripTypes(types);
+      console.log('Trip types loaded successfully:', types.length);
+    } catch (error) {
+      console.error('Error loading trip types after login:', error);
+      // Don't fail the login if trip types fail to load
+      // User can still use the app
+    }
   };
 
   const logout = async () => {

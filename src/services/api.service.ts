@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosHeaders} from 'axios';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 
 class ApiService {
@@ -22,7 +22,11 @@ class ApiService {
       (config) => {
         const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          // Ensure headers object exists
+          if (!config.headers) {
+            config.headers = new AxiosHeaders();
+          }
+          config.headers['Authorization'] = `Bearer ${token}`;
         }
         return config;
       },
@@ -37,8 +41,25 @@ class ApiService {
       async (error: AxiosError) => {
         // If error is 401, clear auth data and redirect to login
         if (error.response?.status === 401) {
+          console.error('401 Unauthorized:', {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            responseData: error.response?.data,
+            responseHeaders: error.response?.headers
+          });
+          
+          // Don't clear auth or redirect for login endpoint failures
+          if (error.config?.url?.includes('/auth/login')) {
+            return Promise.reject(error);
+          }
+          
           this.clearAuthData();
-          window.location.href = '/login';
+          // Only redirect if not already on login/register pages
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+            window.location.href = '/login';
+          }
         }
 
         return Promise.reject(error);
@@ -49,6 +70,7 @@ class ApiService {
   private clearAuthData(): void {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    localStorage.removeItem('refresh_token');
   }
 
   // Generic request methods
@@ -57,17 +79,17 @@ class ApiService {
     return response.data;
   }
 
-  public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.post(url, data, config);
     return response.data;
   }
 
-  public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.put(url, data, config);
     return response.data;
   }
 
-  public async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.axiosInstance.patch(url, data, config);
     return response.data;
   }

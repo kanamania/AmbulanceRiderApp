@@ -14,12 +14,12 @@ import {
   IonCardTitle,
   IonSpinner,
 } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import authService from '../services/auth.service';
 import './Register.css';
 
 const Register: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -72,7 +72,7 @@ const Register: React.FC = () => {
       setShowToast(true);
       
       setTimeout(() => {
-        history.replace('/login');
+        navigate('/login', { replace: true });
       }, 1500);
     } catch (error: any) {
       setToastMessage(error.message || 'Registration failed. Please try again.');
@@ -166,7 +166,7 @@ const Register: React.FC = () => {
                     <IonText
                       color="primary"
                       style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => history.push('/login')}
+                      onClick={() => navigate('/login')}
                     >
                       Login here
                     </IonText>

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   IonContent, 
-  IonPage, 
-  IonButton, 
+  IonButton,
   IonIcon, 
   IonSpinner,
   useIonAlert,
@@ -19,9 +18,6 @@ import {
   IonRow,
   IonCol,
   IonList,
-  IonChip,
-  IonSelect,
-  IonSelectOption
 } from '@ionic/react';
 import { 
   arrowBack,
@@ -33,36 +29,44 @@ import {
   closeCircle,
   alertCircle,
   informationCircle,
-  navigate,
-  call,
-  mail,
-  calendar
+  calendar,
+  navigate as navigateIcon,
 } from 'ionicons/icons';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Trip, TripStatusLog } from '../../types';
 import { tripService } from '../../services';
 import './AdminPages.css';
 
 const TripDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [statusLogs, setStatusLogs] = useState<TripStatusLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const loadTripDetails = async () => {
+    if (!id) {
+      presentToast({
+        message: 'Invalid trip ID',
+        duration: 3000,
+        color: 'danger'
+      });
+      navigate(-1);
+      return;
+    }
+    
     try {
       setLoading(true);
-      const tripData = await tripService.getTripById(parseInt(id));
+      const tripData = await tripService.getTripById(parseInt(id!));
       setTrip(tripData);
       
       // Load status logs
       try {
-        const logs = await tripService.getTripStatusLogs(parseInt(id));
+        const logs = await tripService.getTripStatusLogs(parseInt(id!));
         setStatusLogs(logs);
       } catch (error) {
         console.error('Error loading status logs:', error);
@@ -74,7 +78,7 @@ const TripDetails: React.FC = () => {
         duration: 3000,
         color: 'danger'
       });
-      history.goBack();
+      navigate(-1);
     } finally {
       setLoading(false);
     }
@@ -174,7 +178,7 @@ const TripDetails: React.FC = () => {
     });
   };
 
-  const openInMaps = (latitude: number, longitude: number, address: string) => {
+  const openInMaps = (latitude: number, longitude: number) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
     window.open(url, '_blank');
   };
@@ -219,7 +223,7 @@ const TripDetails: React.FC = () => {
             <IonButton 
               fill="outline" 
               color="medium"
-              onClick={() => history.goBack()}
+              onClick={() => navigate(-1)}
             >
               <IonIcon icon={arrowBack} slot="start" />
               Back
@@ -248,9 +252,9 @@ const TripDetails: React.FC = () => {
                         <IonButton 
                           size="small" 
                           fill="clear" 
-                          onClick={() => openInMaps(trip.fromLatitude, trip.fromLongitude, trip.fromAddress)}
+                          onClick={() => openInMaps(trip.fromLatitude, trip.fromLongitude)}
                         >
-                          <IonIcon icon={navigate} slot="start" />
+                          <IonIcon icon={navigateIcon} slot="start" />
                           Open in Maps
                         </IonButton>
                       </IonLabel>
@@ -264,9 +268,9 @@ const TripDetails: React.FC = () => {
                         <IonButton 
                           size="small" 
                           fill="clear" 
-                          onClick={() => openInMaps(trip.toLatitude, trip.toLongitude, trip.toAddress)}
+                          onClick={() => openInMaps(trip.toLatitude, trip.toLongitude)}
                         >
-                          <IonIcon icon={navigate} slot="start" />
+                          <IonIcon icon={navigateIcon} slot="start" />
                           Open in Maps
                         </IonButton>
                       </IonLabel>
@@ -352,7 +356,7 @@ const TripDetails: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     <div className="status-timeline">
-                      {statusLogs.map((log, index) => (
+                      {statusLogs.map((log) => (
                         <div key={log.id} className="timeline-item">
                           <div className="timeline-marker"></div>
                           <div className="timeline-content">

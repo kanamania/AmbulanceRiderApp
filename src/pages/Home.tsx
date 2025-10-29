@@ -47,12 +47,12 @@ interface TripFormData {
   patientName: string;
   emergencyType: string;
   notes: string;
-  attributeValues: Record<string, any>;
+  attributeValues: Record<string, unknown>;
 }
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
-  const { tripTypes } = useAuth();
+  const { tripTypes, isAuthenticated, isLoading: authLoading } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedTripType, setSelectedTripType] = useState<TripType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -82,26 +82,39 @@ const Home: React.FC = () => {
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
 
-  // Fetch locations on component mount
+  // Fetch locations on component mount - only after auth is loaded
   useEffect(() => {
     const fetchData = async () => {
+      // Don't fetch if auth is still loading or user is not authenticated
+      if (authLoading || !isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const locationsData = await locationService.getAllLocations();
         setLocations(locationsData);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load locations';
+        
+        // If we get a 401, it means the token is invalid - don't show error to user
+        // The API interceptor will handle the redirect to login
+        if (errorMessage.includes('401')) {
+          return;
+        }
+        
+        console.error('Error fetching data:', error);
         setToastMessage(errorMessage);
         setToastColor('danger');
         setShowToast(true);
-        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   // Handle predefined location selection for "from"
   const handleFromLocationSelect = (locationId: string) => {
@@ -164,7 +177,7 @@ const Home: React.FC = () => {
   };
 
   // Handle dynamic attribute value change
-  const handleAttributeChange = (attributeName: string, value: any) => {
+  const handleAttributeChange = (attributeName: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       attributeValues: {

@@ -35,7 +35,7 @@ import {
   alertCircle,
   add
 } from 'ionicons/icons';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -71,7 +71,7 @@ interface UserFormData {
 const UserEdit: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
-  const history = useHistory();
+  const navigate = useNavigate();
   const [presentToast] = useIonToast();
   const [presentLoading, dismissLoading] = useIonLoading();
   const [isLoading, setIsLoading] = useState(isEdit);
@@ -99,11 +99,11 @@ const UserEdit: React.FC = () => {
   // Load user data if in edit mode
   useEffect(() => {
     const loadUser = async () => {
-      if (!isEdit) return;
+      if (!isEdit || !id) return;
       
       try {
         setIsLoading(true);
-        const userData = await userService.getUser(parseInt(id));
+        const userData = await userService.getUser(parseInt(id!));
         setUser(userData);
         
         // Set form values
@@ -122,22 +122,22 @@ const UserEdit: React.FC = () => {
           duration: 3000,
           color: 'danger'
         });
-        history.push('/admin/users');
+        navigate('/admin/users');
       } finally {
         setIsLoading(false);
       }
     };
     
     loadUser();
-  }, [id, isEdit, history, presentToast, reset]);
+  }, [id, isEdit, navigate, presentToast, reset]);
 
   const onSubmit = async (data: UserFormData) => {
     try {
       setIsSubmitting(true);
       
-      if (isEdit && user) {
+      if (isEdit && user && id) {
         // Update existing user
-        await userService.updateUser(parseInt(id), data);
+        await userService.updateUser(parseInt(id!), data);
         presentToast({
           message: 'User updated successfully',
           duration: 3000,
@@ -186,7 +186,7 @@ const UserEdit: React.FC = () => {
         });
       }
       
-      history.push('/admin/users');
+      navigate('/admin/users');
     } catch (error: any) {
       console.error('Error saving user:', error);
       presentToast({
@@ -201,11 +201,11 @@ const UserEdit: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!isEdit || !user) return;
+    if (!isEdit || !user || !id) return;
     
     try {
       await presentLoading('Deleting user...');
-      await userService.deleteUser(parseInt(id));
+      await userService.deleteUser(parseInt(id!));
       
       presentToast({
         message: 'User deleted successfully',
@@ -214,7 +214,7 @@ const UserEdit: React.FC = () => {
         icon: checkmarkCircle
       });
       
-      history.push('/admin/users');
+      navigate('/admin/users');
     } catch (error) {
       console.error('Error deleting user:', error);
       presentToast({
@@ -442,7 +442,7 @@ const UserEdit: React.FC = () => {
               type="button" 
               fill="clear" 
               color="medium"
-              onClick={() => history.goBack()}
+              onClick={() => navigate(-1)}
               disabled={isSubmitting}
             >
               Cancel
