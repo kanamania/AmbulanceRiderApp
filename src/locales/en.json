@@ -107,10 +107,15 @@
     "tripDetails": "Trip Details",
     "driver": "Driver",
     "vehicle": "Vehicle",
+    "selectVehicle": "Select Vehicle",
+    "vehicleRequired": "Please select a vehicle before accepting the trip",
+    "assignedVehicle": "Assigned Vehicle",
     "estimatedCost": "Estimated Cost",
     "actualCost": "Actual Cost",
     "distance": "Distance",
-    "duration": "Duration"
+    "duration": "Duration",
+    "newTripNotification": "New trip request created",
+    "tripStatusChangedNotification": "Trip status has been updated"
   },
   "user": {
     "users": "Users",
@@ -200,5 +205,19 @@
     "forbidden": "You don't have permission to access this resource",
     "notFound": "Not found",
     "serverError": "Server error. Please try again later."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "enable": "Enable Notifications",
+    "disable": "Disable Notifications",
+    "permissionRequired": "Notification permission required",
+    "permissionDenied": "Notification permission denied",
+    "newTrip": "New trip request",
+    "tripStatusChanged": "Trip status changed",
+    "tripAccepted": "Your trip has been accepted",
+    "tripRejected": "Your trip has been rejected",
+    "tripInProgress": "Your trip is in progress",
+    "tripCompleted": "Your trip has been completed",
+    "tripCancelled": "Your trip has been cancelled"
   }
 }

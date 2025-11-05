@@ -176,6 +176,7 @@ export interface Trip {
   id: number;
   userId: number;
   tripTypeId?: number;
+  vehicleId?: number;
   fromLocationId?: number;
   toLocationId?: number;
   fromAddress: string;
@@ -191,10 +192,17 @@ export interface Trip {
   createdAt: string;
   updatedAt: string;
   attributeValues?: Record<string, any>; // Dynamic attribute values
+  vehicle?: {
+    id: number;
+    licensePlate: string;
+    make: string;
+    model: string;
+  };
 }
 
 export interface CreateTripData {
   tripTypeId?: number;
+  vehicleId?: number;
   fromLocationId?: number;
   toLocationId?: number;
   fromAddress: string;
@@ -213,6 +221,7 @@ export interface CreateTripData {
 // Trip approval request
 export interface ApproveTripRequest {
   approve: boolean;
+  vehicleId?: number;
   rejectionReason?: string;
   telemetry?: import('./telemetry.types').TelemetryData;
 }
@@ -239,6 +248,7 @@ export interface CancelTripRequest {
 export interface UpdateTripStatusRequest {
   id: number;
   status: number; // 0=Pending, 1=Approved, 2=Rejected, 3=InProgress, 4=Completed, 5=Cancelled
+  vehicleId?: number;
   notes?: string;
   rejectionReason?: string;
   forceComplete?: boolean;

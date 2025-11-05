@@ -107,10 +107,15 @@
     "tripDetails": "Maelezo ya Safari",
     "driver": "Dereva",
     "vehicle": "Gari",
+    "selectVehicle": "Chagua Gari",
+    "vehicleRequired": "Tafadhali chagua gari kabla ya kukubali safari",
+    "assignedVehicle": "Gari Lililopangwa",
     "estimatedCost": "Gharama Inayotarajiwa",
     "actualCost": "Gharama Halisi",
     "distance": "Umbali",
-    "duration": "Muda"
+    "duration": "Muda",
+    "newTripNotification": "Ombi jipya la safari limeundwa",
+    "tripStatusChangedNotification": "Hali ya safari imesasishwa"
   },
   "user": {
     "users": "Watumiaji",
@@ -200,5 +205,19 @@
     "forbidden": "Huna ruhusa ya kufikia rasilimali hii",
     "notFound": "Haijapatikana",
     "serverError": "Hitilafu ya seva. Tafadhali jaribu tena baadaye."
+  },
+  "notifications": {
+    "title": "Arifa",
+    "enable": "Washa Arifa",
+    "disable": "Zima Arifa",
+    "permissionRequired": "Ruhusa ya arifa inahitajika",
+    "permissionDenied": "Ruhusa ya arifa imekataliwa",
+    "newTrip": "Ombi jipya la safari",
+    "tripStatusChanged": "Hali ya safari imebadilika",
+    "tripAccepted": "Safari yako imekubaliwa",
+    "tripRejected": "Safari yako imekataliwa",
+    "tripInProgress": "Safari yako inaendelea",
+    "tripCompleted": "Safari yako imekamilika",
+    "tripCancelled": "Safari yako imeghairiwa"
   }
 }

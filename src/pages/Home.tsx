@@ -30,6 +30,7 @@ import DynamicFormField from '../components/DynamicFormField';
 import { useAuth } from '../contexts/AuthContext';
 import locationService from '../services/location.service';
 import tripService from '../services/trip.service';
+import notificationService from '../services/notification.service';
 import { Location, CreateTripData, TripType } from '../types';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './Home.css';
@@ -249,7 +250,15 @@ const Home: React.FC = () => {
         telemetry,
       };
 
-      await tripService.createTrip(tripData);
+      const createdTrip = await tripService.createTrip(tripData);
+      
+      // Send notification to dispatchers/admins about new trip
+      try {
+        await notificationService.notifyTripCreated(createdTrip.id);
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
+        // Don't fail the trip creation if notification fails
+      }
       
       setToastMessage('Trip request created successfully!');
       setToastColor('success');

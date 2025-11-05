@@ -18,6 +18,8 @@ import {
   IonRow,
   IonCol,
   IonList,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/react';
 import { 
   arrowBack,
@@ -34,14 +36,16 @@ import {
 } from 'ionicons/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Trip, TripStatusLog } from '../../types';
-import { tripService } from '../../services';
+import { Trip, TripStatusLog, Vehicle } from '../../types';
+import { tripService, vehicleService, notificationService } from '../../services';
 import './AdminPages.css';
 
 const TripDetails: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [statusLogs, setStatusLogs] = useState<TripStatusLog[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [presentAlert] = useIonAlert();
@@ -63,6 +67,15 @@ const TripDetails: React.FC = () => {
       setLoading(true);
       const tripData = await tripService.getTripById(parseInt(id!));
       setTrip(tripData);
+      setSelectedVehicleId(tripData.vehicleId);
+      
+      // Load available vehicles
+      try {
+        const vehiclesData = await vehicleService.getVehicles({ status: 'available' });
+        setVehicles(vehiclesData.data);
+      } catch (error) {
+        console.error('Error loading vehicles:', error);
+      }
       
       // Load status logs
       try {
@@ -86,6 +99,16 @@ const TripDetails: React.FC = () => {
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!trip) return;
+    
+    // For accepting trips, validate vehicle selection
+    if (newStatus === 'accepted' && !selectedVehicleId) {
+      presentToast({
+        message: 'Please select a vehicle before accepting the trip',
+        duration: 3000,
+        color: 'warning'
+      });
+      return;
+    }
     
     presentAlert({
       header: 'Update Trip Status',
@@ -121,8 +144,17 @@ const TripDetails: React.FC = () => {
               await tripService.updateTripStatus({
                 id: trip.id,
                 status: statusMap[newStatus],
+                vehicleId: selectedVehicleId,
                 notes: data?.reason || undefined
               });
+              
+              // Send notification about status change
+              try {
+                await notificationService.notifyTripStatusChanged(trip.id, newStatus);
+              } catch (notifError) {
+                console.error('Failed to send notification:', notifError);
+                // Don't fail the status update if notification fails
+              }
               
               presentToast({
                 message: 'Trip status updated successfully',
@@ -402,6 +434,37 @@ const TripDetails: React.FC = () => {
                       <IonLabel>Current Status</IonLabel>
                       {getStatusBadge(trip.status)}
                     </IonItem>
+                    
+                    {/* Vehicle Selection */}
+                    {trip.status === 'pending' && (
+                      <IonItem>
+                        <IonLabel position="stacked">Select Vehicle *</IonLabel>
+                        <IonSelect
+                          value={selectedVehicleId}
+                          onIonChange={(e) => setSelectedVehicleId(e.detail.value)}
+                          placeholder="Choose a vehicle"
+                          interface="action-sheet"
+                        >
+                          {vehicles.map((vehicle) => (
+                            <IonSelectOption key={vehicle.id} value={vehicle.id}>
+                              {vehicle.make} {vehicle.model} - {vehicle.licensePlate}
+                            </IonSelectOption>
+                          ))}
+                        </IonSelect>
+                      </IonItem>
+                    )}
+                    
+                    {/* Display assigned vehicle */}
+                    {trip.vehicle && (
+                      <IonItem>
+                        <IonIcon icon={car} slot="start" color="primary" />
+                        <IonLabel>
+                          <h3>Assigned Vehicle</h3>
+                          <p>{trip.vehicle.make} {trip.vehicle.model}</p>
+                          <p>{trip.vehicle.licensePlate}</p>
+                        </IonLabel>
+                      </IonItem>
+                    )}
                   </IonList>
                   
                   <div className="status-actions">
