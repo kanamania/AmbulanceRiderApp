@@ -1,16 +1,22 @@
 import React, { ReactNode } from 'react';
-import { IonPage, IonSplitPane, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonIcon, IonMenuToggle } from '@ionic/react';
-import { home, people, car, list, settings, logOut } from 'ionicons/icons';
+import { IonPage, IonSplitPane, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonIcon, IonMenuToggle, IonButtons, IonButton, IonBackButton, IonAvatar } from '@ionic/react';
+import { home, people, car, list, settings, logOut, arrowBack, settingsOutline, location as locationIcon, listCircle } from 'ionicons/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getUserAvatar } from '../utils/avatar.utils';
 import './AdminLayout.css';
 
 interface AdminLayoutProps {
   children: ReactNode;
   title: string;
+  showBackButton?: boolean;
+  showSettingsButton?: boolean;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, showBackButton = true, showSettingsButton = true }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -19,6 +25,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       console.error('Logout error:', error);
     }
   };
+
+  const handleBackClick = () => {
+    navigate(-1);
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/tabs/settings');
+  };
+
+  // Don't show back button on dashboard
+  const isDashboard = location.pathname === '/admin/dashboard' || location.pathname === '/admin';
+  const shouldShowBackButton = showBackButton && !isDashboard;
 
   return (
     <IonPage>
@@ -61,6 +79,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
               </IonMenuToggle>
 
               <IonMenuToggle auto-hide="false">
+                <IonItem button routerLink="/admin/locations" routerDirection="none">
+                  <IonIcon slot="start" icon={locationIcon} />
+                  <IonLabel>Locations</IonLabel>
+                </IonItem>
+              </IonMenuToggle>
+
+              <IonMenuToggle auto-hide="false">
+                <IonItem button routerLink="/admin/trip-types" routerDirection="none">
+                  <IonIcon slot="start" icon={listCircle} />
+                  <IonLabel>Trip Types</IonLabel>
+                </IonItem>
+              </IonMenuToggle>
+
+              <IonMenuToggle auto-hide="false">
                 <IonItem button routerLink="/admin/settings" routerDirection="none">
                   <IonIcon slot="start" icon={settings} />
                   <IonLabel>System Settings</IonLabel>
@@ -77,6 +109,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
               {/* User Info */}
               <div className="user-info">
                 <IonItem lines="none">
+                  <IonAvatar slot="start" style={{ width: '40px', height: '40px' }}>
+                    <img 
+                      src={getUserAvatar(user?.imageUrl, user?.firstName, user?.lastName, 80)} 
+                      alt="Profile" 
+                    />
+                  </IonAvatar>
                   <IonLabel>
                     <h3>{user?.firstName} {user?.lastName}</h3>
                     <p>{user?.email}</p>
@@ -92,7 +130,21 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         <div className="ion-page" id="main-content">
           <IonHeader>
             <IonToolbar color="primary">
+              {shouldShowBackButton && (
+                <IonButtons slot="start">
+                  <IonButton onClick={handleBackClick}>
+                    <IonIcon icon={arrowBack} slot="icon-only" />
+                  </IonButton>
+                </IonButtons>
+              )}
               <IonTitle>{title}</IonTitle>
+              {showSettingsButton && (
+                <IonButtons slot="end">
+                  <IonButton onClick={handleSettingsClick}>
+                    <IonIcon icon={settingsOutline} slot="icon-only" />
+                  </IonButton>
+                </IonButtons>
+              )}
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
@@ -104,4 +156,4 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   );
 };
 
-export default AdminLayout;
+

@@ -21,6 +21,7 @@ import {
 import { logOutOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getUserAvatar } from '../utils/avatar.utils';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -108,7 +109,7 @@ const Profile: React.FC = () => {
               <div className="profile-avatar-container">
                 <IonAvatar className="profile-avatar-large">
                   <img 
-                    src={user?.imageUrl || 'https://ionicframework.com/docs/img/demos/avatar.svg'} 
+                    src={getUserAvatar(user?.imageUrl, user?.firstName, user?.lastName, 200)} 
                     alt="Profile" 
                   />
                 </IonAvatar>

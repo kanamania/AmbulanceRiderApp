@@ -37,7 +37,7 @@ import {
   create
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import { Trip } from '../../types';
 import { tripService } from '../../services';
 import './AdminPages.css';

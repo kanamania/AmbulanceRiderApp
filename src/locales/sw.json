@@ -28,7 +28,8 @@
     "language": "Lugha",
     "theme": "Mandhari",
     "darkMode": "Hali ya Giza",
-    "lightMode": "Hali ya Mwanga"
+    "lightMode": "Hali ya Mwanga",
+    "all": "Zote"
   },
   "auth": {
     "loginTitle": "Ingia kwenye Akaunti Yako",
@@ -115,7 +116,9 @@
     "distance": "Umbali",
     "duration": "Muda",
     "newTripNotification": "Ombi jipya la safari limeundwa",
-    "tripStatusChangedNotification": "Hali ya safari imesasishwa"
+    "tripStatusChangedNotification": "Hali ya safari imesasishwa",
+    "noTrips": "Hakuna safari",
+    "noTripsMessage": "Bado hujaunda safari yoyote"
   },
   "user": {
     "users": "Watumiaji",
@@ -173,16 +176,33 @@
     "locationName": "Jina la Eneo",
     "address": "Anwani",
     "coordinates": "Kuratibu",
-    "latitude": "Latitudo",
     "longitude": "Longitudo",
     "locationCreated": "Eneo limeundwa kwa mafanikio",
     "locationUpdated": "Eneo limesasishwa kwa mafanikio",
-    "locationDeleted": "Eneo limefutwa kwa mafanikio"
+    "locationDeleted": "Eneo limefutwa kwa mafanikio",
+    "noLocations": "Hakuna maeneo",
+    "noLocationsMessage": "Ongeza maeneo ili kusimamia sehemu za kuchukua na marudio"
+  },
+  "tripType": {
+    "tripTypes": "Aina za Safari",
+    "addTripType": "Ongeza Aina ya Safari",
+    "editTripType": "Hariri Aina ya Safari",
+    "deleteTripType": "Futa Aina ya Safari",
+    "tripTypeName": "Jina la Aina ya Safari",
+    "tripTypeDescription": "Maelezo",
+    "tripTypeColor": "Rangi",
+    "tripTypeIcon": "Ikoni",
+    "displayOrder": "Mpangilio wa Kuonyesha",
+    "attributes": "Sifa",
+    "noTripTypes": "Hakuna aina za safari",
+    "noTripTypesMessage": "Ongeza aina za safari ili kuweka safari zako katika makundi",
+    "tripTypeCreated": "Aina ya safari imeundwa kwa mafanikio",
+    "tripTypeUpdated": "Aina ya safari imesasishwa kwa mafanikio",
+    "tripTypeDeleted": "Aina ya safari imefutwa kwa mafanikio"
   },
   "validation": {
     "required": "Sehemu hii inahitajika",
     "emailInvalid": "Barua pepe si sahihi",
-    "passwordTooShort": "Nywila ni fupi sana (angalau herufi 8)",
     "passwordMismatch": "Nywila hazilingani",
     "phoneInvalid": "Nambari ya simu si sahihi",
     "selectAtLeastOne": "Chagua angalau moja",
@@ -218,6 +238,36 @@
     "tripRejected": "Safari yako imekataliwa",
     "tripInProgress": "Safari yako inaendelea",
     "tripCompleted": "Safari yako imekamilika",
-    "tripCancelled": "Safari yako imeghairiwa"
+    "tripCancelled": "Safari yako imeghairiwa",
+    "history": "Historia ya Arifa",
+    "viewHistory": "Tazama arifa zote",
+    "pushNotifications": "Arifa za Kusukuma",
+    "pushNotificationsDescription": "Pokea arifa za masasisho ya safari",
+    "noNotifications": "Hakuna arifa",
+    "noNotificationsMessage": "Bado huna arifa yoyote",
+    "new": "MPYA",
+    "justNow": "Sasa hivi",
+    "minutesAgo": "d iliyopita",
+    "hoursAgo": "s iliyopita",
+    "daysAgo": "s iliyopita"
+  },
+  "settings": {
+    "appearance": "Mwonekano",
+    "darkModeDescription": "Badilisha hali ya giza",
+    "languageDescription": "Badilisha lugha ya programu",
+    "about": "Kuhusu",
+    "version": "Toleo",
+    "adminControls": "Udhibiti wa Msimamizi",
+    "dashboardDescription": "Tazama takwimu na uchambuzi wa mfumo",
+    "usersDescription": "Simamia watumiaji na majukumu",
+    "vehiclesDescription": "Simamia magari na usafiri",
+    "tripManagement": "Usimamizi wa Safari",
+    "tripManagementDescription": "Tazama na simamia safari zote",
+    "locations": "Maeneo",
+    "locationsDescription": "Simamia maeneo ya kuchukua na marudio",
+    "tripTypes": "Aina za Safari",
+    "tripTypesDescription": "Sanidi aina za safari na sifa",
+    "systemSettings": "Mipangilio ya Mfumo",
+    "systemSettingsDescription": "Sanidi mapendeleo ya mfumo"
   }
 }

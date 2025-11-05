@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   IonContent, 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonButtons, 
-  IonButton, 
+  IonButton,
   IonIcon, 
   IonSearchbar, 
   IonRefresher, 
@@ -23,13 +18,10 @@ import {
   IonAvatar,
   IonText
 } from '@ionic/react';
-import { add, car, create, trash, refresh, checkmarkCircle, alertCircle } from 'ionicons/icons';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import AdminLayout from '../../layouts/AdminLayout';
+import { add, car, create, trash } from 'ionicons/icons';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import { Vehicle, VehicleStatus } from '../../types/vehicle.types';
 import { vehicleService } from '../../services';
-import { ROLES } from '../../utils/role.utils';
 import './AdminPages.css';
 
 const VehicleManagement: React.FC = () => {
@@ -42,8 +34,6 @@ const VehicleManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const itemsPerPage = 10;
 
   const loadVehicles = async (pageNum: number = 1, refresh: boolean = false) => {
@@ -53,16 +43,18 @@ const VehicleManagement: React.FC = () => {
         page: pageNum,
         limit: itemsPerPage,
         search: searchTerm,
-        status: statusFilter !== 'all' ? (statusFilter as any) : undefined
+        status: statusFilter !== 'all' ? (statusFilter as VehicleStatus) : undefined
       });
       
+      const vehicleData = Array.isArray(response) ? response : (response.data || []);
+      
       if (refresh) {
-        setVehicles(response.data as any);
+        setVehicles(vehicleData);
       } else {
-        setVehicles(prev => [...prev, ...(response.data as any)]);
+        setVehicles(prev => [...prev, ...vehicleData]);
       }
       
-      setHasMore(response.data.length === itemsPerPage);
+      setHasMore(vehicleData.length === itemsPerPage);
       setPage(pageNum);
     } catch (error) {
       console.error('Error loading vehicles:', error);
@@ -71,6 +63,8 @@ const VehicleManagement: React.FC = () => {
         duration: 3000,
         color: 'danger'
       });
+      // Set empty array on error to prevent undefined issues
+      setVehicles([]);
     } finally {
       setLoading(false);
     }

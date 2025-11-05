@@ -42,7 +42,7 @@ import * as yup from 'yup';
 import { User, UserRole } from '../../types/auth.types';
 import { userService } from '../../services';
 import { ROLES } from '../../utils/role.utils';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import './AdminPages.css';
 
 // Validation schema

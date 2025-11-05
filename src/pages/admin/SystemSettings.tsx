@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   IonContent, 
-  IonPage, 
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -13,22 +12,18 @@ import {
   IonButton,
   IonIcon,
   IonInput,
-  IonTextarea,
   IonSelect,
   IonSelectOption,
   useIonToast,
   IonGrid,
   IonRow,
   IonCol,
-  IonText,
-  IonChip
+  IonText
 } from '@ionic/react';
 import { 
-  settings,
   notifications,
   mail,
   save,
-  refresh,
   download,
   cloudUpload,
   shield,
@@ -36,7 +31,7 @@ import {
   checkmarkCircle,
   alertCircle
 } from 'ionicons/icons';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import './AdminPages.css';
 
 interface SystemSettings {
@@ -187,7 +182,7 @@ const SystemSettings: React.FC = () => {
               <IonCard>
                 <IonCardHeader>
                   <IonCardTitle>
-                    <IonIcon icon={settings as any} className="section-icon" />
+                    <IonIcon icon={settings as unknown as string} className="section-icon" />
                     General Settings
                   </IonCardTitle>
                 </IonCardHeader>

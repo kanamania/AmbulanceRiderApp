@@ -23,7 +23,7 @@ import {
   speedometer,
   navigate
 } from 'ionicons/icons';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDashboardStats } from '../../services/dashboard.service';
 import './AdminPages.css';

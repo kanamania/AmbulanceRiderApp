@@ -35,7 +35,7 @@ import {
   navigate as navigateIcon,
 } from 'ionicons/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import { Trip, TripStatusLog, Vehicle } from '../../types';
 import { tripService, vehicleService, notificationService } from '../../services';
 import './AdminPages.css';

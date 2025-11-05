@@ -23,8 +23,8 @@ i18n
   // Initialize i18next
   .init({
     resources,
-    fallbackLng: 'sw', // Swahili as default
-    lng: 'sw', // Default language is Swahili
+    fallbackLng: 'en', // Swahili as default
+    lng: 'en', // Default language is Swahili
     debug: false,
     
     interpolation: {

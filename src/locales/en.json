@@ -28,7 +28,8 @@
     "language": "Language",
     "theme": "Theme",
     "darkMode": "Dark Mode",
-    "lightMode": "Light Mode"
+    "lightMode": "Light Mode",
+    "all": "All"
   },
   "auth": {
     "loginTitle": "Login to Your Account",
@@ -115,7 +116,9 @@
     "distance": "Distance",
     "duration": "Duration",
     "newTripNotification": "New trip request created",
-    "tripStatusChangedNotification": "Trip status has been updated"
+    "tripStatusChangedNotification": "Trip status has been updated",
+    "noTrips": "No trips found",
+    "noTripsMessage": "You haven't created any trips yet"
   },
   "user": {
     "users": "Users",
@@ -173,16 +176,33 @@
     "locationName": "Location Name",
     "address": "Address",
     "coordinates": "Coordinates",
-    "latitude": "Latitude",
     "longitude": "Longitude",
     "locationCreated": "Location created successfully",
     "locationUpdated": "Location updated successfully",
-    "locationDeleted": "Location deleted successfully"
+    "locationDeleted": "Location deleted successfully",
+    "noLocations": "No locations found",
+    "noLocationsMessage": "Add locations to manage pickup and destination points"
+  },
+  "tripType": {
+    "tripTypes": "Trip Types",
+    "addTripType": "Add Trip Type",
+    "editTripType": "Edit Trip Type",
+    "deleteTripType": "Delete Trip Type",
+    "tripTypeName": "Trip Type Name",
+    "tripTypeDescription": "Description",
+    "tripTypeColor": "Color",
+    "tripTypeIcon": "Icon",
+    "displayOrder": "Display Order",
+    "attributes": "Attributes",
+    "noTripTypes": "No trip types found",
+    "noTripTypesMessage": "Add trip types to categorize your trips",
+    "tripTypeCreated": "Trip type created successfully",
+    "tripTypeUpdated": "Trip type updated successfully",
+    "tripTypeDeleted": "Trip type deleted successfully"
   },
   "validation": {
     "required": "This field is required",
     "emailInvalid": "Invalid email address",
-    "passwordTooShort": "Password is too short (minimum 8 characters)",
     "passwordMismatch": "Passwords do not match",
     "phoneInvalid": "Invalid phone number",
     "selectAtLeastOne": "Select at least one",
@@ -218,6 +238,36 @@
     "tripRejected": "Your trip has been rejected",
     "tripInProgress": "Your trip is in progress",
     "tripCompleted": "Your trip has been completed",
-    "tripCancelled": "Your trip has been cancelled"
+    "tripCancelled": "Your trip has been cancelled",
+    "history": "Notification History",
+    "viewHistory": "View all notifications",
+    "pushNotifications": "Push Notifications",
+    "pushNotificationsDescription": "Receive notifications for trip updates",
+    "noNotifications": "No notifications",
+    "noNotificationsMessage": "You don't have any notifications yet",
+    "new": "NEW",
+    "justNow": "Just now",
+    "minutesAgo": "m ago",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago"
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "darkModeDescription": "Toggle dark mode theme",
+    "languageDescription": "Change app language",
+    "about": "About",
+    "version": "Version",
+    "adminControls": "Admin Controls",
+    "dashboardDescription": "View system statistics and analytics",
+    "usersDescription": "Manage users and roles",
+    "vehiclesDescription": "Manage vehicles and fleet",
+    "tripManagement": "Trip Management",
+    "tripManagementDescription": "View and manage all trips",
+    "locations": "Locations",
+    "locationsDescription": "Manage pickup and destination locations",
+    "tripTypes": "Trip Types",
+    "tripTypesDescription": "Configure trip types and attributes",
+    "systemSettings": "System Settings",
+    "systemSettingsDescription": "Configure system preferences"
   }
 }

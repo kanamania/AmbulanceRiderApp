@@ -10,7 +10,7 @@ import {
   IonTabs,
   setupIonicReact
 } from '@ionic/react';
-import {personCircle, settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
+import {settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
 import Home from './pages/Home';
 import Activity from './pages/Activity';
 import Login from './pages/Login';
@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Settings from "./pages/Settings";
+import NotificationsHistory from './pages/NotificationsHistory';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -50,8 +51,8 @@ import '@ionic/react/css/display.css';
  */
 
 /* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-import '@ionic/react/css/palettes/dark.system.css';
+import '@ionic/react/css/palettes/dark.class.css';
+/* import '@ionic/react/css/palettes/dark.system.css'; */
 
 /* Theme variables */
 import './theme/variables.css';
@@ -86,6 +87,13 @@ const App: React.FC = () => {
               
               {/* Admin Routes */}
               <Route path="/admin/*" element={<AdminRoutes />} />
+            
+              {/* Notifications History Route */}
+              <Route path="/notifications-history" element={
+                <ProtectedRoute>
+                  <NotificationsHistory />
+                </ProtectedRoute>
+              } />
               
               {/* Protected Routes with Tabs */}
               <Route path="/tabs/*" element={
@@ -108,10 +116,6 @@ const App: React.FC = () => {
                       <IonTabButton tab="activity" href="/tabs/activity">
                         <IonIcon aria-hidden="true" icon={statsChart} />
                         <IonLabel>Activity</IonLabel>
-                      </IonTabButton>
-                      <IonTabButton tab="profile" href="/tabs/profile">
-                        <IonIcon aria-hidden="true" icon={personCircle} />
-                        <IonLabel>Profile</IonLabel>
                       </IonTabButton>
                       <IonTabButton tab="settings" href="/tabs/settings">
                         <IonIcon aria-hidden="true" icon={settingsSharp} />

@@ -13,10 +13,9 @@ import {
   useIonToast
 } from '@ionic/react';
 import { add, create, trash } from 'ionicons/icons';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import AdminLayout from '../../layouts/AdminLayout';
-import { User } from '../../types/auth.types';
+import { AdminLayout } from '../../layouts/AdminLayout';
+import { User } from '../../types';
 import { userService } from '../../services';
 import { ROLES } from '../../utils/role.utils';
 import './AdminPages.css';
@@ -30,7 +29,6 @@ const UserManagement: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const itemsPerPage = 10;
 
@@ -138,11 +136,13 @@ const UserManagement: React.FC = () => {
   };
 
   const getRoleBadge = (roles: string[]) => {
-    if (roles.includes(ROLES.ADMIN)) {
+    const normalizedRoles = roles.map(role => role.toLowerCase());
+    
+    if (normalizedRoles.includes(ROLES.ADMIN.toLowerCase())) {
       return <span className="status-badge status-admin">Admin</span>;
-    } else if (roles.includes(ROLES.DISPATCHER)) {
+    } else if (normalizedRoles.includes(ROLES.DISPATCHER.toLowerCase())) {
       return <span className="status-badge status-dispatcher">Dispatcher</span>;
-    } else if (roles.includes(ROLES.DRIVER)) {
+    } else if (normalizedRoles.includes(ROLES.DRIVER.toLowerCase())) {
       return <span className="status-badge status-driver">Driver</span>;
     }
     return <span className="status-badge status-user">User</span>;

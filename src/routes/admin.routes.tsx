@@ -13,6 +13,8 @@ import SystemSettings from '../pages/admin/SystemSettings';
 import UserEdit from '../pages/admin/UserEdit';
 import VehicleEdit from '../pages/admin/VehicleEdit';
 import TripDetails from '../pages/admin/TripDetails';
+import LocationManagement from '../pages/admin/LocationManagement';
+import TripTypeManagement from '../pages/admin/TripTypeManagement';
 
 const AdminRoutes: React.FC = () => {
   return (
@@ -73,6 +75,20 @@ const AdminRoutes: React.FC = () => {
         <Route path="trips/:id" element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DISPATCHER]}>
             <TripDetails />
+          </ProtectedRoute>
+        } />
+
+        {/* Location Management */}
+        <Route path="locations" element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <LocationManagement />
+          </ProtectedRoute>
+        } />
+
+        {/* Trip Type Management */}
+        <Route path="trip-types" element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <TripTypeManagement />
           </ProtectedRoute>
         } />
 

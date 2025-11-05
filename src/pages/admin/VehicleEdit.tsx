@@ -50,7 +50,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Vehicle, VehicleStatus, VehicleType } from '../../types/vehicle.types';
 import { vehicleService } from '../../services';
-import AdminLayout from '../../layouts/AdminLayout';
+import {AdminLayout} from '../../layouts/AdminLayout';
 import './AdminPages.css';
 
 // Validation schema
