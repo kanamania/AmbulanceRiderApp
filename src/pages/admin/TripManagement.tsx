@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   IonContent, 
-  IonPage, 
-  IonSearchbar, 
+  IonSearchbar,
   IonRefresher, 
   IonRefresherContent, 
   IonSpinner,
@@ -16,12 +15,7 @@ import {
   IonItem,
   IonText,
   IonIcon,
-  IonButton,
-  IonSelect,
-  IonSelectOption,
-  IonGrid,
-  IonRow,
-  IonCol
+  IonButton
 } from '@ionic/react';
 import { 
   list, 
@@ -33,8 +27,7 @@ import {
   closeCircle,
   alertCircle,
   hourglass,
-  eye,
-  create
+  eye
 } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 import {AdminLayout} from '../../layouts/AdminLayout';
@@ -111,12 +104,13 @@ const TripManagement: React.FC = () => {
     if (term === '') {
       setFilteredTrips(trips);
     } else {
-      const filtered = trips.filter(trip => 
-        trip.fromAddress.toLowerCase().includes(term.toLowerCase()) ||
-        trip.toAddress.toLowerCase().includes(term.toLowerCase()) ||
-        trip.patientName?.toLowerCase().includes(term.toLowerCase()) ||
-        trip.id.toString().includes(term)
-      );
+      const filtered = trips.filter(trip => {
+        const patientName = trip.attributeValues?.patientName as string | undefined;
+        return trip.fromAddress.toLowerCase().includes(term.toLowerCase()) ||
+          trip.toAddress.toLowerCase().includes(term.toLowerCase()) ||
+          patientName?.toLowerCase().includes(term.toLowerCase()) ||
+          trip.id.toString().includes(term);
+      });
       setFilteredTrips(filtered);
     }
   };
@@ -323,15 +317,18 @@ const TripManagement: React.FC = () => {
                           </div>
                         </div>
                         
-                        {trip.patientName && (
-                          <div className="trip-detail-item">
-                            <IonIcon icon={person} className="detail-icon" />
-                            <div className="detail-text">
-                              <IonText color="medium" className="detail-label">Patient</IonText>
-                              <IonText className="detail-value">{trip.patientName}</IonText>
+                        {(() => {
+                          const patientName = trip.attributeValues?.patientName;
+                          return patientName && typeof patientName === 'string' ? (
+                            <div className="trip-detail-item">
+                              <IonIcon icon={person} className="detail-icon" />
+                              <div className="detail-text">
+                                <IonText color="medium" className="detail-label">Patient</IonText>
+                                <IonText className="detail-value">{patientName}</IonText>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          ) : null;
+                        })()}
                         
                         <div className="trip-detail-item">
                           <IonIcon icon={time} className="detail-icon" />
