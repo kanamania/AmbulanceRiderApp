@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package tz.co.globalexpress.app;
 
 import com.getcapacitor.BridgeActivity;
 
