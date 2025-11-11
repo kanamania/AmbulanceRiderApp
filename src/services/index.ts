@@ -9,3 +9,4 @@ export { default as tripService } from './trip.service';
 export { default as tripTypeService } from './tripType.service';
 export { default as telemetryService } from './telemetry.service';
 export { default as notificationService } from './notification.service';
+export { default as signalRService } from './signalr.service';

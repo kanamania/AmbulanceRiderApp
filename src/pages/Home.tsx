@@ -45,7 +45,7 @@ interface TripFormData {
   fromLongitude: number | null;
   toLatitude: number | null;
   toLongitude: number | null;
-  patientName: string;
+  name: string;
   emergencyType: string;
   notes: string;
   attributeValues: Record<string, unknown>;
@@ -73,7 +73,7 @@ const Home: React.FC = () => {
     fromLongitude: null,
     toLatitude: null,
     toLongitude: null,
-    patientName: '',
+    name: '',
     emergencyType: '',
     notes: '',
     attributeValues: {},
@@ -206,8 +206,8 @@ const Home: React.FC = () => {
       return;
     }
 
-    if (!formData.patientName.trim()) {
-      setToastMessage('Please enter patient name');
+    if (!formData.name.trim()) {
+      setToastMessage('Please trip enter name');
       setToastColor('danger');
       setShowToast(true);
       return;
@@ -243,7 +243,7 @@ const Home: React.FC = () => {
         fromLongitude: formData.fromLongitude,
         toLatitude: formData.toLatitude,
         toLongitude: formData.toLongitude,
-        patientName: formData.patientName,
+        name: formData.name,
         emergencyType: formData.emergencyType || undefined,
         notes: formData.notes || undefined,
         attributeValues: Object.keys(formData.attributeValues).length > 0 ? formData.attributeValues : undefined,
@@ -252,7 +252,7 @@ const Home: React.FC = () => {
 
       const createdTrip = await tripService.createTrip(tripData);
       
-      // Send notification to dispatchers/admins about new trip
+      // Send notification via backend (will broadcast via SignalR)
       try {
         await notificationService.notifyTripCreated(createdTrip.id);
       } catch (notifError) {
@@ -275,7 +275,7 @@ const Home: React.FC = () => {
         fromLongitude: null,
         toLatitude: null,
         toLongitude: null,
-        patientName: '',
+        name: '',
         emergencyType: '',
         notes: '',
         attributeValues: {},

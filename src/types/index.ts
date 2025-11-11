@@ -185,7 +185,7 @@ export interface Trip {
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  patientName?: string;
+  name?: string;
   emergencyType?: string;
   notes?: string;
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
@@ -211,7 +211,7 @@ export interface CreateTripData {
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  patientName?: string;
+  name?: string;
   emergencyType?: string;
   notes?: string;
   attributeValues?: Record<string, unknown>; // Dynamic attribute values

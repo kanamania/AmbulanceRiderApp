@@ -9,7 +9,6 @@ import {
   IonChip,
   IonLabel,
   IonItem,
-  IonText,
   IonIcon,
   IonButton,
   IonModal,
@@ -146,11 +145,12 @@ const Activity: React.FC = () => {
                 vehicleId: selectedVehicleId,
               });
 
-              // Send notification
+              // Send notification via backend (will broadcast via SignalR)
               try {
                 await notificationService.notifyTripStatusChanged(selectedTrip.id, 'accepted');
               } catch (notifError) {
                 console.error('Failed to send notification:', notifError);
+                // Don't fail the trip update if notification fails
               }
 
               presentToast({
@@ -206,11 +206,12 @@ const Activity: React.FC = () => {
                 notes: data.reason,
               });
 
-              // Send notification
+              // Send notification via backend (will broadcast via SignalR)
               try {
                 await notificationService.notifyTripStatusChanged(selectedTrip.id, 'cancelled');
               } catch (notifError) {
                 console.error('Failed to send notification:', notifError);
+                // Don't fail the trip update if notification fails
               }
 
               presentToast({
@@ -407,12 +408,12 @@ const Activity: React.FC = () => {
                     </IonLabel>
                   </IonItem>
 
-                  {trip.patientName && (
+                  {trip.name && (
                     <IonItem lines="none">
                       <IonIcon icon={person} slot="start" color="tertiary" />
                       <IonLabel>
                         <p style={{ fontSize: '12px', color: '#666' }}>Patient</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{trip.patientName}</h3>
+                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{trip.name}</h3>
                       </IonLabel>
                     </IonItem>
                   )}
@@ -490,12 +491,12 @@ const Activity: React.FC = () => {
                         </IonLabel>
                       </IonItem>
 
-                      {selectedTrip.patientName && (
+                      {selectedTrip.name && (
                         <IonItem>
                           <IonIcon icon={person} slot="start" color="tertiary" />
                           <IonLabel>
-                            <h3>Patient Name</h3>
-                            <p>{selectedTrip.patientName}</p>
+                            <h3>Trip Name</h3>
+                            <p>{selectedTrip.name}</p>
                           </IonLabel>
                         </IonItem>
                       )}

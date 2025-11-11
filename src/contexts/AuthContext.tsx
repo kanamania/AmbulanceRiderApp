@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import AuthService from '../services/auth.service';
 import tripTypeService from '../services/tripType.service';
+import signalRService from '../services/signalr.service';
 import { User, LoginCredentials, AuthContextType } from '../types/auth.types';
 import { TripType } from '../types';
 import { ROLES, getDefaultRoute, hasRole, getHighestRole } from '../utils/role.utils';
@@ -28,6 +29,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setTripTypes(types);
             // Only set user after successful API call to verify token works
             setUser(userData);
+            
+            // Initialize SignalR connection for real-time updates
+            try {
+              await signalRService.initialize();
+              console.log('SignalR initialized on app start');
+            } catch (signalRError) {
+              console.error('Error initializing SignalR:', signalRError);
+              // Don't fail auth if SignalR fails
+            }
           } catch (error) {
             console.error('Error loading trip types:', error);
             // If trip types fail to load, user might have invalid token
@@ -63,9 +73,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Don't fail the login if trip types fail to load
       // User can still use the app
     }
+    
+    // Initialize SignalR connection for real-time updates
+    try {
+      await signalRService.initialize();
+      console.log('SignalR initialized after login');
+    } catch (signalRError) {
+      console.error('Error initializing SignalR:', signalRError);
+      // Don't fail login if SignalR fails
+    }
   };
 
   const logout = async () => {
+    // Disconnect SignalR before logging out
+    try {
+      await signalRService.disconnect();
+      console.log('SignalR disconnected on logout');
+    } catch (error) {
+      console.error('Error disconnecting SignalR:', error);
+    }
+    
     await AuthService.logout();
     setUser(null);
     setTripTypes([]);

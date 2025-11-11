@@ -24,7 +24,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AdminRoutes from './routes/admin.routes';
-import { notificationService } from './services';
 import './i18n'; // Initialize i18n
 
 /* Core CSS required for Ionic components to work properly */
@@ -60,19 +59,9 @@ import './theme/variables.css';
 setupIonicReact();
 
 const App: React.FC = () => {
-  // Initialize push notifications on app start
-  useEffect(() => {
-    const initNotifications = async () => {
-      try {
-        await notificationService.initialize();
-      } catch (error) {
-        console.error('Failed to initialize notifications:', error);
-      }
-    };
-
-    initNotifications();
-  }, []);
-
+  // Note: Real-time notifications are handled via SignalR in the backend
+  // No need for push notifications plugin (Firebase/APNs)
+  
   return (
     <IonApp>
       <ThemeProvider>

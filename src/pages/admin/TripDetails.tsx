@@ -148,7 +148,7 @@ const TripDetails: React.FC = () => {
                 notes: data?.reason || undefined
               });
               
-              // Send notification about status change
+              // Send notification via backend (will broadcast via SignalR)
               try {
                 await notificationService.notifyTripStatusChanged(trip.id, newStatus);
               } catch (notifError) {
@@ -308,12 +308,12 @@ const TripDetails: React.FC = () => {
                       </IonLabel>
                     </IonItem>
                     
-                    {trip.patientName && (
+                    {trip.name && (
                       <IonItem>
                         <IonIcon icon={person} slot="start" color="tertiary" />
                         <IonLabel>
-                          <h3>Patient Name</h3>
-                          <p>{trip.patientName}</p>
+                          <h3>Trip Name</h3>
+                          <p>{trip.name}</p>
                         </IonLabel>
                       </IonItem>
                     )}

@@ -1,4 +1,4 @@
-import { jwtDecode } from 'jwt-decode';
+import {jwtDecode, JwtPayload} from 'jwt-decode';
 import apiService from './api.service';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
@@ -47,10 +47,15 @@ class AuthService {
     if (!token) return false;
 
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded: JwtPayload = jwtDecode(token);
       const currentTime = Date.now() / 1000;
+      if (!decoded.exp) {
+        throw new Error('Token does not contain expiration time');
+      }
       return decoded.exp > currentTime;
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send reset email';
+      throw new Error(message);
       return false;
     }
   }
@@ -85,7 +90,7 @@ class AuthService {
   }
 
   // Forgot password - Send reset email
-  async forgotPassword(email: string, telemetry?: any): Promise<void> {
+  async forgotPassword(email: string, telemetry?: unknown): Promise<void> {
     try {
       await apiService.post(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, { email, telemetry });
     } catch (error) {
@@ -95,7 +100,7 @@ class AuthService {
   }
 
   // Reset password with token
-  async resetPassword(token: string, password: string, email?: string, telemetry?: any): Promise<void> {
+  async resetPassword(token: string, password: string, email?: string, telemetry?: unknown): Promise<void> {
     try {
       await apiService.post(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, {
         token,
@@ -110,11 +115,12 @@ class AuthService {
   }
 
   // Decode JWT token
-  decodeToken(token: string): any {
+  decodeToken(token: string): string {
     try {
       return jwtDecode(token);
     } catch (error) {
-      return null;
+      const message = error instanceof Error ? error.message : 'Failed to reset password';
+      throw new Error(message);
     }
   }
 }

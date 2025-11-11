@@ -1,5 +1,15 @@
-import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
+/**
+ * Notification Service
+ * 
+ * This service handles real-time notifications via SignalR.
+ * The backend uses SignalR hubs at:
+ * - /hubs/notifications - For general notifications
+ * - /hubs/trips - For trip-related updates
+ * 
+ * Note: This does NOT use Firebase Cloud Messaging or APNs.
+ * All real-time updates come through SignalR WebSocket connections.
+ */
+
 import apiService from './api.service';
 
 export interface NotificationPayload {
@@ -9,164 +19,81 @@ export interface NotificationPayload {
 }
 
 class NotificationService {
-  private isInitialized = false;
-  private deviceToken: string | null = null;
+  private notifications: NotificationPayload[] = [];
+  private listeners: Array<(notification: NotificationPayload) => void> = [];
 
   /**
-   * Initialize push notifications
-   * This should be called once when the app starts
+   * Add a notification to the history
    */
-  async initialize(): Promise<void> {
-    // Only initialize on native platforms
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Push notifications are only available on native platforms');
-      return;
+  addNotification(notification: NotificationPayload): void {
+    this.notifications.unshift(notification);
+    // Keep only last 50 notifications
+    if (this.notifications.length > 50) {
+      this.notifications = this.notifications.slice(0, 50);
     }
-
-    if (this.isInitialized) {
-      return;
-    }
-
-    try {
-      // Request permission to use push notifications
-      const permStatus = await PushNotifications.requestPermissions();
-
-      if (permStatus.receive === 'granted') {
-        // Register with Apple / Google to receive push via APNS/FCM
-        await PushNotifications.register();
-        this.isInitialized = true;
-        console.log('Push notifications initialized successfully');
-      } else {
-        console.warn('Push notification permission not granted');
-      }
-
-      // Setup listeners
-      this.setupListeners();
-    } catch (error) {
-      console.error('Error initializing push notifications:', error);
-    }
-  }
-
-  /**
-   * Setup notification event listeners
-   */
-  private setupListeners(): void {
-    // On successful registration
-    PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration success, token: ' + token.value);
-      this.deviceToken = token.value;
-      this.sendTokenToServer(token.value);
-    });
-
-    // On registration error
-    PushNotifications.addListener('registrationError', (err: unknown) => {
-      const error = err instanceof Error ? err : new Error(String(err));
-      console.error('Error on registration: ' + JSON.stringify(error));
-    });
-
-    // Show notification when app is in foreground
-    PushNotifications.addListener(
-      'pushNotificationReceived',
-      (notification: PushNotificationSchema) => {
-        console.log('Push notification received: ', notification);
-        // You can show a local notification or update the UI
-        this.handleNotificationReceived(notification);
-      }
-    );
-
-    // Handle notification tap
-    PushNotifications.addListener(
-      'pushNotificationActionPerformed',
-      (notification: ActionPerformed) => {
-        console.log('Push notification action performed', notification);
-        this.handleNotificationAction(notification);
-      }
-    );
-  }
-
-  /**
-   * Send device token to backend server
-   */
-  private async sendTokenToServer(token: string): Promise<void> {
-    try {
-      await apiService.post('/notifications/register-device', {
-        token,
-        platform: Capacitor.getPlatform(),
-      });
-      console.log('Device token sent to server successfully');
-    } catch (error) {
-      console.error('Error sending device token to server:', error);
-    }
-  }
-
-  /**
-   * Handle notification received while app is in foreground
-   */
-  private handleNotificationReceived(notification: PushNotificationSchema): void {
-    // You can implement custom logic here
-    // For example, show a toast or update the UI
-    console.log('Notification received:', notification.title, notification.body);
-  }
-
-  /**
-   * Handle notification tap/action
-   */
-  private handleNotificationAction(action: ActionPerformed): void {
-    const data = action.notification.data;
     
-    // Navigate based on notification type
-    if (data?.type === 'trip_created' || data?.type === 'trip_status_changed') {
-      // You can use a router or event emitter to navigate
-      console.log('Navigate to trip:', data.tripId);
-      // Example: window.location.href = `/admin/trips/${data.tripId}`;
-    }
+    // Notify all listeners
+    this.listeners.forEach(listener => listener(notification));
+    
+    console.log('Notification added:', notification);
   }
 
   /**
-   * Get the current device token
+   * Get all notifications
    */
-  getDeviceToken(): string | null {
-    return this.deviceToken;
+  getNotifications(): NotificationPayload[] {
+    return [...this.notifications];
   }
 
   /**
-   * Check if push notifications are available
+   * Clear all notifications
    */
-  isAvailable(): boolean {
-    return Capacitor.isNativePlatform();
+  clearNotifications(): void {
+    this.notifications = [];
   }
 
   /**
-   * Send a local notification (for testing or immediate feedback)
+   * Subscribe to new notifications
    */
-  async sendLocalNotification(payload: NotificationPayload): Promise<void> {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Local notifications only available on native platforms');
-      return;
-    }
-
-    try {
-      // Note: You might need to add @capacitor/local-notifications plugin for this
-      console.log('Local notification:', payload);
-    } catch (error) {
-      console.error('Error sending local notification:', error);
-    }
+  subscribe(callback: (notification: NotificationPayload) => void): () => void {
+    this.listeners.push(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.listeners.indexOf(callback);
+      if (index > -1) {
+        this.listeners.splice(index, 1);
+      }
+    };
   }
 
   /**
-   * Request notification for trip creation (called by users)
+   * Show a local notification (for in-app display)
+   */
+  showNotification(payload: NotificationPayload): void {
+    this.addNotification(payload);
+    
+    // You can add toast/alert logic here if needed
+    console.log('Showing notification:', payload.title);
+  }
+
+  /**
+   * Notify about trip creation
+   * Sends a request to backend which will broadcast via SignalR
    */
   async notifyTripCreated(tripId: number): Promise<void> {
     try {
       await apiService.post('/notifications/trip-created', { tripId });
-      console.log('Trip creation notification sent');
+      console.log('Trip creation notification sent to backend');
     } catch (error) {
       console.error('Error sending trip creation notification:', error);
+      throw error;
     }
   }
 
   /**
-   * Request notification for trip status change
+   * Notify about trip status change
+   * Sends a request to backend which will broadcast via SignalR
    */
   async notifyTripStatusChanged(tripId: number, status: string): Promise<void> {
     try {
@@ -174,27 +101,10 @@ class NotificationService {
         tripId,
         status,
       });
-      console.log('Trip status change notification sent');
+      console.log('Trip status change notification sent to backend');
     } catch (error) {
       console.error('Error sending trip status change notification:', error);
-    }
-  }
-
-  /**
-   * Unregister from push notifications
-   */
-  async unregister(): Promise<void> {
-    if (!Capacitor.isNativePlatform()) {
-      return;
-    }
-
-    try {
-      await PushNotifications.removeAllListeners();
-      this.isInitialized = false;
-      this.deviceToken = null;
-      console.log('Push notifications unregistered');
-    } catch (error) {
-      console.error('Error unregistering push notifications:', error);
+      throw error;
     }
   }
 }
