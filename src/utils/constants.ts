@@ -4,7 +4,7 @@
 
 export const APP_CONSTANTS = {
   // App Info
-  APP_NAME: 'Ambulance Rider',
+  APP_NAME: 'Global Express',
   APP_VERSION: '1.0.0',
 
   // Token Expiration

@@ -1,4 +1,4 @@
-# Ambulance Rider App - Setup Guide
+# Global Express - Setup Guide
 
 ## Quick Start
 

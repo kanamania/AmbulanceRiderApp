@@ -72,9 +72,9 @@ const SystemSettings: React.FC = () => {
   
   const [settings, setSettings] = useState<SystemSettings>({
     general: {
-      siteName: 'Ambulance Rider',
-      siteUrl: 'https://ambulancerider.com',
-      adminEmail: 'admin@ambulancerider.com',
+      siteName: 'Global Express',
+      siteUrl: 'https://globalexpress.co.tz',
+      adminEmail: 'admin@globalexpress.co.tz',
       timezone: 'UTC',
       dateFormat: 'MM/DD/YYYY'
     },
@@ -90,8 +90,8 @@ const SystemSettings: React.FC = () => {
       smtpPort: 587,
       smtpUsername: '',
       smtpPassword: '',
-      fromEmail: 'noreply@ambulancerider.com',
-      fromName: 'Ambulance Rider'
+      fromEmail: 'noreply@globalexpress.co.tz',
+      fromName: 'Global Express'
     },
     security: {
       requireEmailVerification: true,

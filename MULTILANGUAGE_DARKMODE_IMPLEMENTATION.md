@@ -9,7 +9,7 @@
 
 ## Overview
 
-The Ambulance Rider App now supports:
+The Global Express now supports:
 - **Multi-language support**: English and Swahili (default)
 - **Dark mode toggle**: Light mode (default) and Dark mode
 - **Top-right controls**: Language selector and theme toggle in header

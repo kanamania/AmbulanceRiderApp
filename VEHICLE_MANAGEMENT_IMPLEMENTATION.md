@@ -1,7 +1,7 @@
 # Vehicle Management Implementation
 
 ## Overview
-This document outlines the implementation of the Vehicle Management feature for the Ambulance Rider application's admin panel.
+This document outlines the implementation of the Vehicle Management feature for the Global Express application's admin panel.
 
 ## Implemented Components
 

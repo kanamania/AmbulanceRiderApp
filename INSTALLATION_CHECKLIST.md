@@ -1,6 +1,6 @@
 # Installation Checklist
 
-Use this checklist to ensure proper installation and setup of the Ambulance Rider App.
+Use this checklist to ensure proper installation and setup of the Global Express.
 
 ## Pre-Installation
 

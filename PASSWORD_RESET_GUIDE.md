@@ -1,6 +1,6 @@
 # Password Reset Feature Guide
 
-Complete guide for the forgot password and reset password functionality in the Ambulance Rider App.
+Complete guide for the forgot password and reset password functionality in the Global Express.
 
 ## Overview
 
@@ -30,7 +30,7 @@ User receives an email containing:
 
 Example email format:
 ```
-Subject: Reset Your Password - Ambulance Rider
+Subject: Reset Your Password - Global Express
 
 Hi [User Name],
 
@@ -44,7 +44,7 @@ This link will expire in 1 hour.
 If you didn't request this, please ignore this email.
 
 Thanks,
-Ambulance Rider Team
+Global Express Team
 ```
 
 ### Step 3: Reset Password
@@ -385,7 +385,7 @@ describe('Password Reset', () => {
     <p>{{reset_link}}</p>
     <p>This link will expire in 1 hour.</p>
     <p>If you didn't request this, please ignore this email.</p>
-    <p>Thanks,<br>Ambulance Rider Team</p>
+    <p>Thanks,<br>Global Express Team</p>
   </div>
 </body>
 </html>
@@ -407,7 +407,7 @@ This link will expire in 1 hour.
 If you didn't request this, please ignore this email.
 
 Thanks,
-Ambulance Rider Team
+Global Express Team
 ```
 
 ## Troubleshooting

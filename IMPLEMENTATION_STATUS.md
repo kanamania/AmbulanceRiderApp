@@ -1,8 +1,8 @@
-# Implementation Status - Ambulance Rider Application
+# Implementation Status - Global Expresslication
 
 ## 📊 Project Overview
 
-**Project Name**: Ambulance Rider Application  
+**Project Name**: Global Expresslication  
 **Type**: Vehicle Rider Service Platform  
 **Framework**: React + Ionic Framework  
 **Last Updated**: October 28, 2025
@@ -179,7 +179,7 @@
 ## 📁 Project Structure
 
 ```
-AmbulanceRiderApp/
+Global Express/
 ├── public/                      # Static assets
 ├── src/
 │   ├── components/              # Reusable components
@@ -434,8 +434,8 @@ npm run build
 
 ### Environment Setup
 ```env
-REACT_APP_API_URL=https://api.ambulancerider.com/api
-REACT_APP_SITE_NAME=Ambulance Rider
+REACT_APP_API_URL=https://api.globalexpress.co.tz/api
+REACT_APP_SITE_NAME=Global Express
 ```
 
 ### Hosting Options

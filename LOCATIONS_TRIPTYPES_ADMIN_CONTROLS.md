@@ -1,7 +1,7 @@
 # Admin Controls for Locations and Trip Types
 
 ## Overview
-This document describes the admin/dispatcher controls for managing locations and trip types in the Ambulance Rider App.
+This document describes the admin/dispatcher controls for managing locations and trip types in the Global Express.
 
 ## Implementation Summary
 

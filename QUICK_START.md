@@ -1,4 +1,4 @@
-# Quick Start Guide - Ambulance Rider App
+# Quick Start Guide - Global Express
 
 Get up and running in 5 minutes!
 
@@ -272,6 +272,6 @@ If you encounter issues:
 
 ## You're All Set! 🎉
 
-Your Ambulance Rider app is now ready for development. Start building amazing features!
+Your Global Express app is now ready for development. Start building amazing features!
 
 For detailed information, see the complete documentation in `AUTH_README.md`.

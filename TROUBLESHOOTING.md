@@ -1,6 +1,6 @@
-# Troubleshooting Guide - Ambulance Rider App
+# Troubleshooting Guide - Global Express
 
-This guide helps you resolve common issues with the Ambulance Rider application.
+This guide helps you resolve common issues with the Global Express application.
 
 ## Table of Contents
 

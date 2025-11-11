@@ -1,7 +1,7 @@
 # Admin Panel Implementation - Complete
 
 ## Overview
-This document provides a comprehensive overview of the fully implemented Role-Based Access Control (RBAC) admin panel for the Ambulance Rider application.
+This document provides a comprehensive overview of the fully implemented Role-Based Access Control (RBAC) admin panel for the Global Express application.
 
 ## Implementation Date
 October 28, 2025
@@ -518,7 +518,7 @@ await vehicleService.deleteVehicle(id);
 Create a `.env` file with:
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_SITE_NAME=Ambulance Rider
+REACT_APP_SITE_NAME=Global Express
 ```
 
 ### Build Commands

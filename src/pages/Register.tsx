@@ -91,7 +91,7 @@ const Register: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle className="ion-text-center">
                 <h1>Create Account</h1>
-                <p>Join Ambulance Rider today</p>
+                <p>Join Global Express today</p>
               </IonCardTitle>
             </IonCardHeader>
             

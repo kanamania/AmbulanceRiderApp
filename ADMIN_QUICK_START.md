@@ -38,28 +38,28 @@ For testing, you'll need accounts with different roles:
 
 ### Admin Account
 ```
-Email: admin@ambulancerider.com
+Email: admin@globalexpress.co.tz
 Password: Admin123!
 Access: Full system access
 ```
 
 ### Dispatcher Account
 ```
-Email: dispatcher@ambulancerider.com
+Email: dispatcher@globalexpress.co.tz
 Password: Dispatch123!
 Access: Vehicle and trip management
 ```
 
 ### Driver Account
 ```
-Email: driver@ambulancerider.com
+Email: driver@globalexpress.co.tz
 Password: Driver123!
 Access: No admin panel access (will be redirected)
 ```
 
 ### User Account
 ```
-Email: user@ambulancerider.com
+Email: user@globalexpress.co.tz
 Password: User123!
 Access: No admin panel access (will be redirected)
 ```

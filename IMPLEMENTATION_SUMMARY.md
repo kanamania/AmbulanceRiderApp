@@ -1,7 +1,7 @@
 # JWT Authentication & Authorization Implementation Summary
 
 ## Overview
-Successfully integrated JWT-based authentication and authorization into the Ambulance Rider Ionic React application.
+Successfully integrated JWT-based authentication and authorization into the Global Express Ionic React application.
 
 ## Files Created/Modified
 
@@ -273,4 +273,4 @@ const MyComponent = () => {
 
 ## Conclusion
 
-The Ambulance Rider app now has a complete, production-ready JWT authentication and authorization system with password reset functionality. All components are properly integrated, documented, and ready for use.
+The Global Express app now has a complete, production-ready JWT authentication and authorization system with password reset functionality. All components are properly integrated, documented, and ready for use.

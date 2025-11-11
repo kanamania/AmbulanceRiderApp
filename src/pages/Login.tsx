@@ -74,7 +74,7 @@ const Login: React.FC = () => {
           <IonCard className="login-card">
             <IonCardHeader>
               <IonCardTitle className="ion-text-center">
-                <h1>Ambulance Rider</h1>
+                <h1>Global Express</h1>
                 <p>{t('auth.loginTitle')}</p>
               </IonCardTitle>
             </IonCardHeader>

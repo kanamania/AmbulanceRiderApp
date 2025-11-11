@@ -279,7 +279,7 @@ const Settings: React.FC = () => {
         <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '24px' }}>
           <IonText color="medium">
             <p style={{ fontSize: '12px' }}>
-              © 2025 Ambulance Rider App
+              © 2025 Global Express
             </p>
           </IonText>
         </div>

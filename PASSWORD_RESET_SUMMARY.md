@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully added complete password reset functionality to the Ambulance Rider app, allowing users to securely reset their passwords via email.
+Successfully added complete password reset functionality to the Global Express app, allowing users to securely reset their passwords via email.
 
 **Date**: October 26, 2025  
 **Version**: 1.1.0  
@@ -198,7 +198,7 @@ Created `PASSWORD_RESET_GUIDE.md`:
 The backend should send an email like this:
 
 ```
-Subject: Reset Your Password - Ambulance Rider
+Subject: Reset Your Password - Global Express
 
 Hi [User Name],
 
@@ -212,7 +212,7 @@ This link will expire in 1 hour.
 If you didn't request this, please ignore this email.
 
 Thanks,
-Ambulance Rider Team
+Global Express Team
 ```
 
 ---

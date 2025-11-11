@@ -1,7 +1,7 @@
 # Backend Integration Plan
 
 ## Overview
-This document outlines the plan to integrate the Ambulance Rider App frontend with the existing backend API as defined in `API_SPECIFICATION.md`.
+This document outlines the plan to integrate the Global Express frontend with the existing backend API as defined in `API_SPECIFICATION.md`.
 
 ---
 

@@ -1,8 +1,8 @@
 # Backend API Test Script
-# Tests connectivity and basic endpoints of the Ambulance Rider API
+# Tests connectivity and basic endpoints of the Global Express API
 
 Write-Host "==================================" -ForegroundColor Cyan
-Write-Host "Ambulance Rider API Test Script" -ForegroundColor Cyan
+Write-Host "Global Express API Test Script" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 

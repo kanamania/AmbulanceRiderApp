@@ -52,7 +52,7 @@ All custom environment variables must be prefixed with `VITE_`:
 The `.env.example` file already uses the correct naming:
 ```env
 VITE_API_URL=http://localhost:5000/api
-VITE_APP_NAME="Ambulance Rider App"
+VITE_APP_NAME="Global Express"
 VITE_APP_VERSION=1.0.0
 ```
 

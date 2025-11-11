@@ -1,4 +1,4 @@
-# Ambulance Rider App
+# Global Express
 
 A modern, full-featured mobile application built with Ionic React and TypeScript, featuring complete JWT authentication and authorization.
 
@@ -96,7 +96,7 @@ This installs:
 ## 📁 Project Structure
 
 ```
-AmbulanceRiderApp/
+Global Express/
 ├── src/
 │   ├── config/
 │   │   └── api.config.ts          # API configuration
@@ -165,7 +165,7 @@ Create a `.env` file:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
-VITE_APP_NAME=Ambulance Rider App
+VITE_APP_NAME=Global Express
 VITE_APP_VERSION=1.0.0
 ```
 

@@ -1,6 +1,6 @@
-# JWT Authentication & Authorization - Ambulance Rider App
+# JWT Authentication & Authorization - Global Express
 
-This document describes the JWT authentication and authorization implementation in the Ambulance Rider Ionic React application.
+This document describes the JWT authentication and authorization implementation in the Global Express Ionic React application.
 
 ## Overview
 
