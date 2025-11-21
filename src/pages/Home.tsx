@@ -127,6 +127,8 @@ const Home: React.FC = () => {
         fromAddress: location.name,
         // In a real app, you would get coordinates from the location object
         // For now, we'll leave them null until the user picks from map
+        fromLatitude: location.latitude,
+        fromLongitude: location.longitude,
       }));
     }
   };
@@ -140,6 +142,8 @@ const Home: React.FC = () => {
         toLocationId: location.id,
         toAddress: location.name,
         // In a real app, you would get coordinates from the location object
+        toLatitude: location.latitude,
+        toLongitude: location.longitude,
       }));
     }
   };

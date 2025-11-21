@@ -9,6 +9,10 @@ import {
   IonButtons,
   IonLoading,
   IonToast,
+  IonSearchbar,
+  IonList,
+  IonItem,
+  IonLabel,
 } from '@ionic/react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -56,11 +60,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   onLocationSelected,
   initialLocation,
 }) => {
-  const DEFAULT_CENTER: [number, number] = [9.0054, 38.7636]; // Addis Ababa
+  const DEFAULT_CENTER: [number, number] = [-6.814716925593744, 39.287831907676]; // Posta Dar es Salaam
   const [selectedPosition, setSelectedPosition] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<L.Map>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ display_name: string; lat: number; lon: number }[]>([]);
+  const [searching, setSearching] = useState(false);
 
   // Reset selected position when modal opens
   useEffect(() => {
@@ -72,6 +79,88 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       }
     }
   }, [isOpen, initialLocation]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const target = selectedPosition
+      ? selectedPosition
+      : initialLocation
+      ? [initialLocation.lat, initialLocation.lng]
+      : null;
+    if (target) {
+      map.setView(target as [number, number], map.getZoom(), { animate: true });
+    }
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
+  }, [isOpen, initialLocation, selectedPosition]);
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=5`;
+        const res = await fetch(url, { signal: controller.signal, headers: { 'Accept-Language': 'en' } });
+        if (!res.ok) throw new Error('Failed to search');
+        const data = await res.json();
+        const mapped = data.map((d: { display_name: string; lat: string; lon: string }) => ({ display_name: d.display_name, lat: parseFloat(d.lat), lon: parseFloat(d.lon) }));
+        setSearchResults(mapped);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error('Search error:', err.message);
+        }
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+    return () => {
+      controller.abort();
+      clearTimeout(t);
+    };
+  }, [searchQuery]);
+
+  const handleSelectLocation = (lat: number, lng: number) => {
+    setSelectedPosition([lat, lng]);
+    setSearchQuery('');
+    setSearchResults([]);
+    const map = mapRef.current;
+    if (map) {
+      map.setView([lat, lng], map.getZoom(), { animate: true });
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 0);
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported');
+      return;
+    }
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        handleSelectLocation(lat, lng);
+        setSearchQuery('');
+        setSearchResults([]);
+        setLoading(false);
+      },
+      () => {
+        setError('Unable to get current location');
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedPosition([lat, lng]);
@@ -106,7 +195,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       });
 
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching address:', err);
       // Fallback to coordinates if geocoding fails
       onLocationSelected({
@@ -132,26 +221,52 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <MapContainer
-                center={initialLocation ? [initialLocation.lat, initialLocation.lng] : DEFAULT_CENTER}
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                ref={mapRef}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <MapClickHandler onLocationClick={handleMapClick} />
-                {selectedPosition && (
-                  <Marker position={selectedPosition} icon={defaultIcon} />
-                )}
-              </MapContainer>
+          <div style={{ position: 'relative', height: '100%' }}>
+            <MapContainer
+              center={initialLocation ? [initialLocation.lat, initialLocation.lng] : DEFAULT_CENTER}
+              zoom={13}
+              style={{ height: '100%', width: '100%' }}
+              ref={mapRef}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <MapClickHandler onLocationClick={handleMapClick} />
+              {selectedPosition && (
+                <Marker position={selectedPosition} icon={defaultIcon} />
+              )}
+            </MapContainer>
+
+            <div style={{ position: 'absolute', top: 12, left: 12, right: 12, zIndex: 1000 }}>
+              <IonSearchbar
+                value={searchQuery}
+                onIonInput={(e) => setSearchQuery((e).detail.value || '')}
+                placeholder="Search for a place"
+              />
+              {(searchQuery.length > 0 || searchResults.length > 0) && (
+                <div style={{ marginTop: 8, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', maxHeight: 240, overflow: 'auto' }}>
+                  <IonList>
+                    <IonItem button onClick={handleUseCurrentLocation}>
+                      <IonLabel>Use my current location</IonLabel>
+                    </IonItem>
+                    {searchResults.map((r, idx) => (
+                      <IonItem key={idx} button onClick={() => handleSelectLocation(r.lat, r.lon)}>
+                        <IonLabel>{r.display_name}</IonLabel>
+                      </IonItem>
+                    ))}
+                    {!searching && searchResults.length === 0 && searchQuery.length >= 3 && (
+                      <IonItem>
+                        <IonLabel>No results</IonLabel>
+                      </IonItem>
+                    )}
+                  </IonList>
+                </div>
+              )}
             </div>
-            <div style={{ padding: '16px', borderTop: '1px solid #ddd' }}>
-              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666' }}>
+
+            <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 1000 }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666', background: 'rgba(255,255,255,0.9)', padding: '8px 12px', borderRadius: 8 }}>
                 {selectedPosition
                   ? `Selected: ${selectedPosition[0].toFixed(6)}, ${selectedPosition[1].toFixed(6)}`
                   : 'Tap on the map to select a location'}

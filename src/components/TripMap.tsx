@@ -26,7 +26,7 @@ interface TripMapProps {
   route?: { lat: number; lng: number }[];
 }
 
-const DEFAULT_CENTER: [number, number] = [9.0054, 38.7636]; // Default to Addis Ababa
+const DEFAULT_CENTER: [number, number] = [-6.814716925593744, 39.287831907676]; // Posta Dar es Salaam
 const ZOOM_LEVEL = 13;
 
 const TripMap: React.FC<TripMapProps> = ({ fromLocation, toLocation, route = [] }) => {

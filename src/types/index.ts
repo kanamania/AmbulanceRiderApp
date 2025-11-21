@@ -5,6 +5,8 @@ export * from './vehicle.types';
 
 // Location types
 export interface Location {
+  longitude: number;
+  latitude: number;
   id: number;
   name: string;
   imagePath?: string;
@@ -15,12 +17,16 @@ export interface Location {
 export interface CreateLocationData {
   name: string;
   image?: File;
+  longitude: number;
+  latitude: number;
 }
 
 export interface UpdateLocationData {
   name?: string;
   image?: File;
   removeImage?: boolean;
+  longitude: number;
+  latitude: number;
 }
 
 // Route types
