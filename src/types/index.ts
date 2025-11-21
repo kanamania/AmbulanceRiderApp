@@ -221,7 +221,7 @@ export interface Trip {
   tripTypeId?: number;
   tripType?: TripType;
   
-  attributeValues: Array<{ tripTypeAttributeId: number; value: string }>;
+  attributeValues?: Array<{ tripTypeAttributeId: number; value: string }>;
   
   optimizedRoute?: string;
   routePolyline?: string;
@@ -237,8 +237,8 @@ export interface CreateTripData {
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  fromLocationName?: string;
-  toLocationName?: string;
+  fromLocationName: string;
+  toLocationName: string;
   vehicleId?: number;
   driverId?: string; // GUID as string
   tripTypeId?: number;

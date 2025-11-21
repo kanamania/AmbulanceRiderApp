@@ -37,8 +37,7 @@ import {
   alertCircle,
   hourglass,
   close,
-  person,
-  navigate as navigateIcon
+  person
 } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
 import AppHeader from '../components/AppHeader';

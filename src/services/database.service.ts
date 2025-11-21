@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { DBTrip, DBTripType, DBUser, DatabaseInitResult } from '../types/database.types';
+import { DBTrip, DBTripType, DBUser, DatabaseInitResult } from '../types';
 import { Trip, TripType, Location, User } from '../types';
 
 // Database row interfaces
@@ -17,8 +17,8 @@ interface TripRow {
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  fromLocationName?: string;
-  toLocationName?: string;
+  fromLocationName: string;
+  toLocationName: string;
   vehicleId?: number;
   driverId?: string;
   approvedBy?: string;
@@ -290,7 +290,7 @@ class DatabaseService {
     for (const trip of trips) {
       const dbTrip: DBTrip = {
         ...trip,
-        attributeValues: JSON.stringify(trip.attributeValues),
+        attributeValues: JSON.stringify(trip.attributeValues) || undefined,
         isLocal: false,
         syncStatus: 'synced',
         approver: trip.approver ? trip.approver.id : undefined

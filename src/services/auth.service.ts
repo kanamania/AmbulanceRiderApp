@@ -2,7 +2,7 @@ import {jwtDecode, JwtPayload} from 'jwt-decode';
 import apiService from './api.service';
 import { databaseService, syncService } from './index';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
-import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
+import { LoginCredentials, RegisterData, AuthResponse, User } from '../types';
 
 class AuthService {
   // Login user

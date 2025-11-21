@@ -1,4 +1,4 @@
-import { TelemetryData } from '../types/telemetry.types';
+import { TelemetryData } from '../types';
 import { App } from '@capacitor/app';
 import { APP_CONSTANTS } from './constants';
 

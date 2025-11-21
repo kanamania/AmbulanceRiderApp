@@ -5,7 +5,7 @@ import {
   DataHashResponse, 
   SyncStatus, 
   LocalTrip 
-} from '../types/database.types';
+} from '../types';
 import { 
   compareHashes, 
   getStoredHashes, 

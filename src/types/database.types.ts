@@ -73,8 +73,8 @@ export interface DBTrip {
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  fromLocationName?: string;
-  toLocationName?: string;
+  fromLocationName: string;
+  toLocationName: string;
   vehicleId?: number;
   driverId?: string;
   approvedBy?: string;
@@ -82,7 +82,7 @@ export interface DBTrip {
   approvedAt?: string;
   createdAt: string;
   tripTypeId?: number;
-  attributeValues?: Array<{ tripTypeAttributeId: number; value: string }>; // Dynamic attribute values
+  attributeValues?: string;
   optimizedRoute?: string;
   routePolyline?: string;
   estimatedDistance?: number;

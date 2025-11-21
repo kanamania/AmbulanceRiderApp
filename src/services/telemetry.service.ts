@@ -7,7 +7,7 @@ import {
   TelemetryLogResponse,
   TimeseriesQueryRequest,
   TelemetryTimeseriesDto,
-} from '../types/telemetry.types';
+} from '../types';
 
 class TelemetryService {
   /**

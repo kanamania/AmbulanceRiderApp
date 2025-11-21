@@ -2,7 +2,7 @@ import React, {ReactNode, useCallback, useEffect, useState} from 'react';
 import AuthService from '../services/auth.service';
 import tripTypeService from '../services/tripType.service';
 import signalRService from '../services/signalr.service';
-import {AuthContextType, LoginCredentials, User, UserRole} from '../types/auth.types';
+import {AuthContextType, LoginCredentials, User, UserRole} from '../types';
 import {TripType} from '../types';
 import {getDefaultRoute, getHighestRole, hasRole} from '../utils/role.utils';
 import {AuthContext} from './useAuth';
