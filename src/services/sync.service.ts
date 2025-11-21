@@ -1,19 +1,9 @@
 import apiService from './api.service';
 import databaseService from './database.service';
-import { tripService } from './index';
-import { 
-  DataHashResponse, 
-  SyncStatus, 
-  LocalTrip 
-} from '../types';
-import { 
-  compareHashes, 
-  getStoredHashes, 
-  storeHashes, 
-  clearStoredHashes 
-} from '../utils/hash.util';
-import { Trip, TripType, Location, User, CreateTripData } from '../types';
-import { API_CONFIG } from '../config/api.config';
+import {tripService} from './index';
+import {CreateTripData, DataHashResponse, LocalTrip, Location, SyncStatus, Trip, TripType, User} from '../types';
+import {clearStoredHashes, compareHashes, getStoredHashes, storeHashes} from '../utils/hash.util';
+import {API_CONFIG} from '../config/api.config';
 
 class SyncService {
   private syncInProgress = false;
@@ -102,8 +92,7 @@ class SyncService {
    * Fetch data hashes from API
    */
   private async fetchDataHashes(): Promise<DataHashResponse> {
-    const response = await apiService.get<DataHashResponse>('/auth/data-hashes');
-    return response;
+    return await apiService.get<DataHashResponse>('/auth/data-hashes');
   }
 
   /**
@@ -274,7 +263,7 @@ class SyncService {
             const { ...tripData } = trip;
             const serverTrip = await tripService.createTrip({
               ...tripData,
-              attributeValues: trip.attributeValues
+              attributeValues: trip.attributeValues ? JSON.parse(trip.attributeValues) : undefined
             });
             
             // Update local trip with server data
@@ -333,8 +322,7 @@ class SyncService {
    */
   private async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await apiService.get<User>('/auth/profile');
-      return response;
+      return await apiService.get<User>('/auth/profile');
     } catch (error) {
       console.error('Failed to get current user:', error);
       return null;

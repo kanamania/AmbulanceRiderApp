@@ -6,7 +6,13 @@ The frontend expects a `/auth/data-hashes` endpoint that returns hash values for
 ## Required Endpoint
 
 ### GET /api/auth/data-hashes
-**Authentication:** Required (Bearer token)
+**Authentication:** ⚠️ **REQUIRED** - Bearer token must be included in Authorization header
+
+**Security:**
+- Endpoint must have `[Authorize]` attribute
+- Returns user-specific data (trips hash is filtered by userId)
+- Validates user identity from JWT token claims
+- Returns 401 Unauthorized if token is missing or invalid
 
 **Response Format:**
 ```json
@@ -219,15 +225,25 @@ Add this method to the existing AuthController:
 ```csharp
 using AmbulanceRider.API.Services;
 using AmbulanceRider.API.DTOs;
+using System.Security.Claims;
 
 // ... existing using statements ...
 
+/// <summary>
+/// Get data hashes for efficient synchronization
+/// </summary>
+/// <returns>Hash values for user data, profile, trip types, locations, and trips</returns>
+/// <response code="200">Returns the data hashes</response>
+/// <response code="401">User is not authenticated</response>
 [HttpGet("data-hashes")]
-[Authorize]
+[Authorize] // ⚠️ REQUIRED: Ensures only authenticated users can access
+[ProducesResponseType(typeof(DataHashResponseDto), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public async Task<ActionResult<DataHashResponseDto>> GetDataHashes()
 {
     try
     {
+        // Extract user ID from JWT token claims
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
@@ -360,21 +376,67 @@ Register in Program.cs:
 builder.Services.AddScoped<IDataHashNotificationService, DataHashNotificationService>();
 ```
 
+## Authentication Flow
+
+### Frontend (Automatic)
+The frontend automatically includes authentication:
+
+```typescript
+// In api.service.ts - Request interceptor
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  }
+);
+
+// In sync.service.ts - Calling the endpoint
+private async fetchDataHashes(): Promise<DataHashResponse> {
+  // Token is automatically added by interceptor
+  const response = await apiService.get<DataHashResponse>('/auth/data-hashes');
+  return response;
+}
+```
+
+### Backend (Validation)
+The backend validates the token:
+
+```csharp
+[Authorize] // Validates JWT token
+public async Task<ActionResult<DataHashResponseDto>> GetDataHashes()
+{
+    // Extract userId from validated token
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+    // Generate user-specific hashes
+    var tripsHash = await _hashService.GenerateTripsHashAsync(userId);
+    // ...
+}
+```
+
 ## Testing
 
 ### Using Swagger
 1. Navigate to `https://your-api/swagger`
-2. Authorize with a valid token
-3. Execute `GET /api/auth/data-hashes`
-4. Verify response contains all hash fields
+2. Click **"Authorize"** button (🔒 icon)
+3. Enter: `Bearer YOUR_JWT_TOKEN`
+4. Click **"Authorize"** then **"Close"**
+5. Execute `GET /api/auth/data-hashes`
+6. Verify response contains all hash fields
 
 ### Using cURL
 ```bash
+# Replace YOUR_TOKEN_HERE with actual JWT token
 curl -X GET "https://your-api/api/auth/data-hashes" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### Expected Response
+### Expected Responses
+
+**Success (200 OK):**
 ```json
 {
   "userHash": "xYz123AbC456...",
@@ -382,6 +444,13 @@ curl -X GET "https://your-api/api/auth/data-hashes" \
   "tripTypesHash": "dEf789GhI012...",
   "locationsHash": "jKl345MnO678...",
   "tripsHash": "pQr901StU234..."
+}
+```
+
+**Unauthorized (401):**
+```json
+{
+  "message": "User not authenticated"
 }
 ```
 
