@@ -1,7 +1,7 @@
 import React from 'react';
 import { IonIcon, IonButton } from '@ionic/react';
 import { moonOutline, sunnyOutline } from 'ionicons/icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme';
 import { useTranslation } from 'react-i18next';
 import './ThemeToggle.css';
 

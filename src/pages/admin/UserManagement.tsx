@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   IonContent, 
   IonButton,
@@ -13,12 +13,12 @@ import {
   useIonToast
 } from '@ionic/react';
 import { add, create, trash } from 'ionicons/icons';
-import { useAuth } from '../../contexts/AuthContext';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { User } from '../../types';
 import { userService } from '../../services';
 import { ROLES } from '../../utils/role.utils';
 import './AdminPages.css';
+import {useAuth} from "../../contexts/useAuth";
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -32,7 +32,7 @@ const UserManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
   const itemsPerPage = 10;
 
-  const loadUsers = async (pageNum: number = 1, refresh: boolean = false) => {
+  const loadUsers = useCallback(async (pageNum: number = 1, refresh: boolean = false) => {
     try {
       setLoading(true);
       const response = await userService.getUsers({
@@ -59,7 +59,7 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, presentToast]);
 
   const handleRefresh = (event: CustomEvent) => {
     loadUsers(1, true).then(() => {
@@ -150,7 +150,7 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     loadUsers(1, true);
-  }, []);
+  }, [loadUsers]);
 
   useEffect(() => {
     setFilteredUsers(users);

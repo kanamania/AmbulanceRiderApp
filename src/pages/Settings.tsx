@@ -18,7 +18,6 @@ import {
   IonText,
 } from '@ionic/react';
 import {
-  personCircle,
   moon,
   language,
   notifications,
@@ -36,10 +35,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppHeader from '../components/AppHeader';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme';
 import { getUserAvatar } from '../utils/avatar.utils';
 import './Settings.css';
+import {useAuth} from "../contexts/useAuth";
 
 const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();

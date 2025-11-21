@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
   IonContent, 
-  IonPage, 
   IonGrid, 
   IonRow, 
   IonCol, 
@@ -9,7 +8,6 @@ import {
   IonCardHeader, 
   IonCardSubtitle, 
   IonCardTitle, 
-  IonCardContent,
   IonIcon,
   IonSpinner
 } from '@ionic/react';
@@ -24,9 +22,9 @@ import {
   navigate
 } from 'ionicons/icons';
 import {AdminLayout} from '../../layouts/AdminLayout';
-import { useAuth } from '../../contexts/AuthContext';
 import { getDashboardStats } from '../../services/dashboard.service';
 import './AdminPages.css';
+import {useAuth} from "../../contexts/useAuth";
 
 interface DashboardStats {
   totalUsers: number;
@@ -67,7 +65,7 @@ const Dashboard: React.FC = () => {
     value, 
     color = 'primary' 
   }: { 
-    icon: any; 
+    icon: string; 
     title: string; 
     value: number | string;
     color?: string;

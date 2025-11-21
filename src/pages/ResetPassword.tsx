@@ -18,11 +18,11 @@ import {
 import { lockClosedOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthService from '../services/auth.service';
-import { validators } from '../utils/validators';
+import { validators } from '../utils';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './ResetPassword.css';
 
-const ResetPassword: React.FC = () => {
+export const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -102,7 +102,8 @@ const ResetPassword: React.FC = () => {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       setToastMessage(error.message || 'Failed to reset password. Please try again.');
       setToastColor('danger');
       setShowToast(true);
@@ -227,5 +228,3 @@ const ResetPassword: React.FC = () => {
     </IonPage>
   );
 };
-
-export default ResetPassword;

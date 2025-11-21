@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { App } from '@capacitor/app';
 import { 
   IonContent, 
   IonButton,
@@ -36,6 +37,7 @@ import {
 } from 'ionicons/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import {AdminLayout} from '../../layouts/AdminLayout';
+import TripMap from '../../components/TripMap';
 import { Trip, TripStatusLog, Vehicle } from '../../types';
 import { tripService, vehicleService, notificationService } from '../../services';
 import './AdminPages.css';
@@ -52,7 +54,7 @@ const TripDetails: React.FC = () => {
   const [presentToast] = useIonToast();
   const navigate = useNavigate();
 
-  const loadTripDetails = async () => {
+  const loadTripDetails = useCallback(async () => {
     if (!id) {
       presentToast({
         message: 'Invalid trip ID',
@@ -95,7 +97,7 @@ const TripDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, presentToast, navigate]);
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!trip) return;
@@ -183,10 +185,16 @@ const TripDetails: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const normalizeStatus = (s: string) => {
+      const v = (s || '').toLowerCase();
+      if (v === 'accepted' || v === 'approved') return 'approved';
+      if (v === 'inprogress' || v === 'in_progress') return 'in_progress';
+      return v;
+    };
+    switch (normalizeStatus(status)) {
       case 'pending':
         return <IonBadge color="warning">Pending</IonBadge>;
-      case 'accepted':
+      case 'approved':
         return <IonBadge color="primary">Accepted</IonBadge>;
       case 'in_progress':
         return <IonBadge color="tertiary">In Progress</IonBadge>;
@@ -201,10 +209,43 @@ const TripDetails: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    // Less than a minute
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    }
+    
+    // Less than an hour
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? '1 minute ago' : `${diffInMinutes} minutes ago`;
+    }
+    
+    // Less than a day
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+    }
+    
+    // Less than a week
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      if (diffInDays === 1) {
+        return 'Yesterday at ' + date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      }
+      return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
+    }
+    
+    // More than a week - show formatted date
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -215,9 +256,110 @@ const TripDetails: React.FC = () => {
     window.open(url, '_blank');
   };
 
+  const [estKm, setEstKm] = useState<number | null>(null);
+  const [estMin, setEstMin] = useState<number | null>(null);
+  const [estimating, setEstimating] = useState(false);
+
+  const getCurrentPos = (): Promise<{ lat: number; lng: number }> =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => {
+          if ((err as GeolocationPositionError)?.code === 1) {
+            App.exitApp();
+            return;
+          }
+          reject(err);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+  const fetchLeg = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }): Promise<{ dist: number; dur: number } | null> => {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false&alternatives=false`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const r = data?.routes?.[0];
+      if (!r) return null;
+      return { dist: r.distance || 0, dur: r.duration || 0 };
+    } catch {
+      return null;
+    }
+  };
+
+  const computeFromCurrent = async () => {
+    if (!trip) return;
+    if (estimating) return;
+    if (estKm !== null && estMin !== null) return;
+    try {
+      setEstimating(true);
+      const cur = await getCurrentPos();
+      const leg1 = await fetchLeg(cur, { lat: trip.fromLatitude, lng: trip.fromLongitude });
+      const leg2 = await fetchLeg({ lat: trip.fromLatitude, lng: trip.fromLongitude }, { lat: trip.toLatitude, lng: trip.toLongitude });
+      if (leg1 && leg2) {
+        setEstKm((leg1.dist + leg2.dist) / 1000);
+        setEstMin((leg1.dur + leg2.dur) / 60);
+      }
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  const openDirections = async (fromLat: number, fromLng: number, toLat: number, toLng: number) => {
+    let originParam = 'Current+Location';
+    try {
+      const cur = await getCurrentPos();
+      originParam = `${cur.lat},${cur.lng}`;
+      if (estKm === null || estMin === null) {
+        computeFromCurrent();
+      }
+    } catch (e){
+      console.error('Error getting current position:', e);
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${toLat},${toLng}&waypoints=${fromLat},${fromLng}&travelmode=driving`;
+    window.open(url, '_blank');
+  };
+
+  const decodePolyline = (str: string): [number, number][] => {
+    let index = 0, lat = 0, lng = 0;
+    const coordinates: [number, number][] = [];
+    const len = str.length;
+    while (index < len) {
+      let b = 0, shift = 0, result = 0;
+      do {
+        b = str.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+      shift = 0;
+      result = 0;
+      do {
+        b = str.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+      coordinates.push([lat / 1e5, lng / 1e5]);
+    }
+    return coordinates;
+  };
+
+  const routePath = useMemo(() => {
+    if (!trip) return [] as { lat: number; lng: number }[];
+    const encoded = trip.routePolyline || trip.optimizedRoute || '';
+    if (!encoded) return [] as { lat: number; lng: number }[];
+    return decodePolyline(encoded).map(([la, ln]) => ({ lat: la, lng: ln }));
+  }, [trip]);
+
   useEffect(() => {
     loadTripDetails();
-  }, [id]);
+  }, [id, loadTripDetails]);
 
   if (loading) {
     return (
@@ -280,7 +422,7 @@ const TripDetails: React.FC = () => {
                       <IonIcon icon={location} slot="start" color="primary" />
                       <IonLabel>
                         <h3>Pickup Location</h3>
-                        <p>{trip.fromAddress}</p>
+                        <p>{trip.fromLocationName}</p>
                         <IonButton 
                           size="small" 
                           fill="clear" 
@@ -296,7 +438,7 @@ const TripDetails: React.FC = () => {
                       <IonIcon icon={location} slot="start" color="danger" />
                       <IonLabel>
                         <h3>Destination</h3>
-                        <p>{trip.toAddress}</p>
+                        <p>{trip.toLocationName}</p>
                         <IonButton 
                           size="small" 
                           fill="clear" 
@@ -318,21 +460,11 @@ const TripDetails: React.FC = () => {
                       </IonItem>
                     )}
                     
-                    {trip.emergencyType && (
-                      <IonItem>
-                        <IonIcon icon={alertCircle} slot="start" color="warning" />
-                        <IonLabel>
-                          <h3>Emergency Type</h3>
-                          <p>{trip.emergencyType}</p>
-                        </IonLabel>
-                      </IonItem>
-                    )}
-                    
-                    {trip.notes && (
+                    {trip.description && (
                       <IonItem>
                         <IonLabel>
-                          <h3>Notes</h3>
-                          <p>{trip.notes}</p>
+                          <h3>Description</h3>
+                          <p>{trip.description}</p>
                         </IonLabel>
                       </IonItem>
                     )}
@@ -345,30 +477,24 @@ const TripDetails: React.FC = () => {
                       </IonLabel>
                     </IonItem>
                     
-                    <IonItem>
-                      <IonIcon icon={time} slot="start" color="medium" />
-                      <IonLabel>
-                        <h3>Last Updated</h3>
-                        <p>{formatDate(trip.updatedAt)}</p>
-                      </IonLabel>
-                    </IonItem>
+                    
                   </IonList>
                 </IonCardContent>
               </IonCard>
 
               {/* Dynamic Attributes */}
-              {trip.attributeValues && Object.keys(trip.attributeValues).length > 0 && (
+              {Array.isArray(trip.attributeValues) && trip.attributeValues.length > 0 && (
                 <IonCard>
                   <IonCardHeader>
                     <IonCardTitle>Additional Information</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList lines="none">
-                      {Object.entries(trip.attributeValues).map(([key, value]) => (
-                        <IonItem key={key}>
+                      {trip.attributeValues.map((av) => (
+                        <IonItem key={av.tripTypeAttributeId}>
                           <IonLabel>
-                            <h3>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
-                            <p>{String(value)}</p>
+                            <h3>{trip.tripType?.attributes.find(a => a.id === av.tripTypeAttributeId)?.label || `Attribute ${av.tripTypeAttributeId}`}</h3>
+                            <p>{av.value}</p>
                           </IonLabel>
                         </IonItem>
                       ))}
@@ -376,6 +502,41 @@ const TripDetails: React.FC = () => {
                   </IonCardContent>
                 </IonCard>
               )}
+
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle>Route Preview</IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <div style={{ marginBottom: 12 }}>
+                    <TripMap
+                      fromLocation={{ lat: trip.fromLatitude, lng: trip.fromLongitude, name: trip.fromLocationName || 'From' }}
+                      toLocation={{ lat: trip.toLatitude, lng: trip.toLongitude, name: trip.toLocationName || 'To' }}
+                      route={routePath}
+                    />
+                  </div>
+                  {(trip.estimatedDistance != null || trip.estimatedDuration != null) && (
+                    <div style={{ marginBottom: 6, fontSize: 14 }}>
+                      Server estimate: 
+                      {trip.estimatedDistance != null && (
+                        <> {(trip.estimatedDistance / 1000).toFixed(1)} km</>
+                      )}
+                      {trip.estimatedDuration != null && (
+                        <> {trip.estimatedDistance != null ? ', ' : ''}{Math.round(trip.estimatedDuration / 60)} min</>
+                      )}
+                    </div>
+                  )}
+                  {estKm !== null && estMin !== null && (
+                    <div style={{ marginBottom: 12, fontSize: 14 }}>
+                      From my location: {estKm.toFixed(1)} km, {Math.round(estMin)} min
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <IonButton onClick={() => openDirections(trip.fromLatitude, trip.fromLongitude, trip.toLatitude, trip.toLongitude)}>Open Directions</IonButton>
+                    <IonButton fill="outline" onClick={computeFromCurrent} disabled={estimating}>{estimating ? 'Computing…' : 'Use My Location'}</IonButton>
+                  </div>
+                </IonCardContent>
+              </IonCard>
 
               {/* Status History */}
               {statusLogs.length > 0 && (
@@ -460,8 +621,7 @@ const TripDetails: React.FC = () => {
                         <IonIcon icon={car} slot="start" color="primary" />
                         <IonLabel>
                           <h3>Assigned Vehicle</h3>
-                          <p>{trip.vehicle.make} {trip.vehicle.model}</p>
-                          <p>{trip.vehicle.licensePlate}</p>
+                          <p>{trip.vehicle.name}</p>
                         </IonLabel>
                       </IonItem>
                     )}
@@ -531,26 +691,6 @@ const TripDetails: React.FC = () => {
                       </IonButton>
                     )}
                   </div>
-                </IonCardContent>
-              </IonCard>
-
-              {/* User Information */}
-              <IonCard>
-                <IonCardHeader>
-                  <IonCardTitle>
-                    <IonIcon icon={person} className="section-icon" />
-                    User Information
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonList lines="none">
-                    <IonItem>
-                      <IonLabel>
-                        <h3>User ID</h3>
-                        <p>{trip.userId}</p>
-                      </IonLabel>
-                    </IonItem>
-                  </IonList>
                 </IonCardContent>
               </IonCard>
             </IonCol>

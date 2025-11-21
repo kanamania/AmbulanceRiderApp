@@ -1,12 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, {ReactNode, useCallback, useEffect, useState} from 'react';
 import AuthService from '../services/auth.service';
 import tripTypeService from '../services/tripType.service';
 import signalRService from '../services/signalr.service';
-import { User, LoginCredentials, AuthContextType } from '../types/auth.types';
-import { TripType } from '../types';
-import { ROLES, getDefaultRoute, hasRole, getHighestRole } from '../utils/role.utils';
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import {AuthContextType, LoginCredentials, User, UserRole} from '../types/auth.types';
+import {TripType} from '../types';
+import {getDefaultRoute, getHighestRole, hasRole} from '../utils/role.utils';
+import {AuthContext} from './useAuth';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -58,8 +57,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials) => {
     const response = await AuthService.login(credentials);
-    console.log('Login response:', response);
-    console.log('Token set:', AuthService.getAccessToken());
     setUser(response.user);
     
     // Load trip types after successful login
@@ -67,7 +64,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const types = await tripTypeService.getActiveTripTypes();
       setTripTypes(types);
-      console.log('Trip types loaded successfully:', types.length);
     } catch (error) {
       console.error('Error loading trip types after login:', error);
       // Don't fail the login if trip types fail to load
@@ -109,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const getDefaultUserRoute = useCallback(() => getDefaultRoute(user), [user]);
 
   // Check if user has specific role
-  const hasUserRole = useCallback((...roles: string[]) => hasRole(user, ...(roles as any)), [user]);
+  const hasUserRole = useCallback((...roles: UserRole[]) => hasRole(user, ...roles), [user]);
 
   const value: AuthContextType = {
     user,
@@ -127,10 +123,3 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};

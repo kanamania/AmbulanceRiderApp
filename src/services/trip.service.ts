@@ -1,4 +1,5 @@
 import apiService from './api.service';
+import { syncService } from './index';
 import { API_CONFIG } from '../config/api.config';
 import {
   Trip,
@@ -196,6 +197,107 @@ class TripService {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete trip';
       throw new Error(message);
+    }
+  }
+
+  // Sync-aware methods
+
+  // Get trips from local cache first, then API if needed
+  async getTripsWithSync(): Promise<Trip[]> {
+    try {
+      // Try to get from local cache first
+      const localTrips = await syncService.getLocalTrips();
+      if (localTrips.length > 0) {
+        return localTrips;
+      }
+      
+      // Fallback to API
+      return await this.getAllTrips();
+    } catch (error) {
+      console.warn('Failed to get trips from cache, falling back to API:', error);
+      return await this.getAllTrips();
+    }
+  }
+
+  // Create trip with sync support
+  async createTripWithSync(data: CreateTripData): Promise<Trip> {
+    try {
+      // Use sync service to handle local/online creation
+      return await syncService.createLocalTrip(data);
+    } catch (error) {
+      console.error('Failed to create trip with sync:', error);
+      throw error;
+    }
+  }
+
+  // Get trip by ID with local cache support
+  async getTripByIdWithSync(id: number): Promise<Trip | null> {
+    try {
+      // Try local cache first
+      const localTrips = await syncService.getLocalTrips();
+      const localTrip = localTrips.find(trip => trip.id === id);
+      
+      if (localTrip) {
+        return localTrip;
+      }
+      
+      // Fallback to API
+      return await this.getTripById(id);
+    } catch (error) {
+      console.warn('Failed to get trip from cache, falling back to API:', error);
+      try {
+        return await this.getTripById(id);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  // Update trip status with local cache update
+  async updateTripStatusWithSync(data: UpdateTripStatusRequest): Promise<Trip> {
+    try {
+      // Update via API
+      const updatedTrip = await this.updateTripStatus(data);
+      
+      // Update local cache
+      try {
+        await syncService.getLocalTrips(); // Ensure cache is loaded
+        const localTrips = await syncService.getLocalTrips();
+        const tripIndex = localTrips.findIndex(trip => trip.id === data.id);
+        
+        if (tripIndex !== -1) {
+          localTrips[tripIndex] = updatedTrip;
+          // Update the trip in local database
+          // This would need a method in syncService to update single trip
+        }
+      } catch (cacheError) {
+        console.warn('Failed to update local cache:', cacheError);
+      }
+      
+      return updatedTrip;
+    } catch (error) {
+      console.error('Failed to update trip status:', error);
+      throw error;
+    }
+  }
+
+  // Sync pending trips
+  async syncPendingTrips(): Promise<void> {
+    try {
+      await syncService.syncPendingTrips();
+    } catch (error) {
+      console.error('Failed to sync pending trips:', error);
+      throw error;
+    }
+  }
+
+  // Force full sync
+  async forceFullSync(): Promise<void> {
+    try {
+      await syncService.forceFullSync();
+    } catch (error) {
+      console.error('Failed to force full sync:', error);
+      throw error;
     }
   }
 }

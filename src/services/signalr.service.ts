@@ -15,7 +15,7 @@ import * as signalR from '@microsoft/signalr';
 import notificationService from './notification.service';
 import {authService} from "./index";
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:5001';
+const SIGNALR_BASE_URL = (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, '');
 
 class SignalRService {
   private notificationConnection: signalR.HubConnection | null = null;
@@ -34,10 +34,15 @@ class SignalRService {
     }
 
     try {
-      await this.connectToNotificationHub(token);
-      await this.connectToTripHub(token);
-      this.isConnected = true;
-      console.log('SignalR connections established');
+      const results = await Promise.allSettled([
+        this.connectToNotificationHub(token),
+        this.connectToTripHub(token),
+      ]);
+      const ok = results.some(r => r.status === 'fulfilled');
+      this.isConnected = ok;
+      if (ok) {
+        console.log('SignalR connections established');
+      }
     } catch (error) {
       console.error('Error initializing SignalR:', error);
     }
@@ -48,7 +53,7 @@ class SignalRService {
    */
   private async connectToNotificationHub(token: string): Promise<void> {
     this.notificationConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${API_URL}/hubs/notifications`, {
+      .withUrl(`${SIGNALR_BASE_URL}/hubs/notifications`, {
         accessTokenFactory: () => token,
       })
       .withAutomaticReconnect()
@@ -97,7 +102,7 @@ class SignalRService {
    */
   private async connectToTripHub(token: string): Promise<void> {
     this.tripConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${API_URL}/hubs/trips`, {
+      .withUrl(`${SIGNALR_BASE_URL}/hubs/trips`, {
         accessTokenFactory: () => token,
       })
       .withAutomaticReconnect()
@@ -194,6 +199,40 @@ class SignalRService {
       await connection.invoke(method, ...args);
     } catch (error) {
       console.error(`Error sending message to ${hubName} hub:`, error);
+    }
+  }
+
+  /**
+   * Register event listener for SignalR events
+   */
+  on(event: string, callback: (...args: unknown[]) => void): void {
+    // Register on both connections if available
+    if (this.notificationConnection) {
+      this.notificationConnection.on(event, callback);
+    }
+    if (this.tripConnection) {
+      this.tripConnection.on(event, callback);
+    }
+  }
+
+  /**
+   * Remove event listener for SignalR events
+   */
+  off(event: string, callback?: (...args: unknown[]) => void): void {
+    // Remove from both connections if available
+    if (this.notificationConnection) {
+      if (callback) {
+        this.notificationConnection.off(event, callback);
+      } else {
+        this.notificationConnection.off(event);
+      }
+    }
+    if (this.tripConnection) {
+      if (callback) {
+        this.tripConnection.off(event, callback);
+      } else {
+        this.tripConnection.off(event);
+      }
     }
   }
 }

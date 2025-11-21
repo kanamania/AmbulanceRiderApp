@@ -24,7 +24,7 @@ export const validators = {
    * Accepts various formats: +1234567890, (123) 456-7890, etc.
    */
   isValidPhone: (phone: string): boolean => {
-    const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-s.]?[(]?[0-9]{1,4}[)]?[-s.]?[0-9]{1,9}$/;
     return phoneRegex.test(phone);
   },
 

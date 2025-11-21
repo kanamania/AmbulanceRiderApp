@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   IonContent, 
   IonButton,
@@ -20,7 +20,7 @@ import {
 } from '@ionic/react';
 import { add, car, create, trash } from 'ionicons/icons';
 import {AdminLayout} from '../../layouts/AdminLayout';
-import { Vehicle, VehicleStatus } from '../../types/vehicle.types';
+import { Vehicle, VehicleStatus } from '../../types';
 import { vehicleService } from '../../services';
 import './AdminPages.css';
 
@@ -36,7 +36,7 @@ const VehicleManagement: React.FC = () => {
   const [presentToast] = useIonToast();
   const itemsPerPage = 10;
 
-  const loadVehicles = async (pageNum: number = 1, refresh: boolean = false) => {
+  const loadVehicles = useCallback(async (pageNum: number = 1, refresh: boolean = false) => {
     try {
       setLoading(true);
       const response = await vehicleService.getVehicles({
@@ -68,7 +68,7 @@ const VehicleManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter, presentToast]);
 
   const handleRefresh = (event: CustomEvent) => {
     loadVehicles(1, true).then(() => {
@@ -157,7 +157,7 @@ const VehicleManagement: React.FC = () => {
 
   useEffect(() => {
     loadVehicles(1, true);
-  }, [statusFilter]);
+  }, [loadVehicles, statusFilter]);
 
   useEffect(() => {
     setFilteredVehicles(vehicles);

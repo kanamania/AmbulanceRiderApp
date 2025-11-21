@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonContent,
   IonButton,
@@ -51,7 +51,7 @@ const TripTypeManagement: React.FC = () => {
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
 
-  const loadTripTypes = async () => {
+  const loadTripTypes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await tripTypeService.getAllTripTypes();
@@ -67,7 +67,7 @@ const TripTypeManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, presentToast]);
 
   const handleRefresh = async (event: CustomEvent) => {
     await loadTripTypes();
@@ -196,7 +196,7 @@ const TripTypeManagement: React.FC = () => {
 
   useEffect(() => {
     loadTripTypes();
-  }, []);
+  }, [loadTripTypes]);
 
   return (
     <AdminLayout title={t('settings.tripTypes')}>

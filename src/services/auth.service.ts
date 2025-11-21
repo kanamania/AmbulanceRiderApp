@@ -1,5 +1,6 @@
 import {jwtDecode, JwtPayload} from 'jwt-decode';
 import apiService from './api.service';
+import { databaseService, syncService } from './index';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth.types';
 
@@ -13,6 +14,16 @@ class AuthService {
       );
 
       this.setAuthData(response);
+      
+      // Initialize database and perform initial sync
+      try {
+        await databaseService.initialize();
+        await syncService.performInitialSync();
+      } catch (syncError) {
+        console.warn('Initial sync failed, but login succeeded:', syncError);
+        // Don't fail login if sync fails
+      }
+      
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
@@ -38,7 +49,15 @@ class AuthService {
 
   // Logout user
   async logout(): Promise<void> {
-    this.clearAuthData();
+    try {
+      // Clear all local data and close database
+      await syncService.clearAllData();
+      await databaseService.close();
+    } catch (error) {
+      console.warn('Failed to clear local data during logout:', error);
+    } finally {
+      this.clearAuthData();
+    }
   }
 
   // Check if user is authenticated

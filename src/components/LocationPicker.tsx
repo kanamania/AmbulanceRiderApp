@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { App } from '@capacitor/app';
 import {
   IonModal,
   IonHeader,
@@ -155,7 +156,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         setSearchResults([]);
         setLoading(false);
       },
-      () => {
+      (err) => {
+        if ((err as GeolocationPositionError)?.code === 1) {
+          App.exitApp();
+          return;
+        }
         setError('Unable to get current location');
         setLoading(false);
       },

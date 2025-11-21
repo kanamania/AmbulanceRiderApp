@@ -10,3 +10,7 @@ export { default as tripTypeService } from './tripType.service';
 export { default as telemetryService } from './telemetry.service';
 export { default as notificationService } from './notification.service';
 export { default as signalRService } from './signalr.service';
+export { default as databaseService } from './database.service';
+export { default as syncService } from './sync.service';
+export { default as backgroundSyncService } from './backgroundSync.service';
+export { default as systemSettingsService } from './systemSettings.service';

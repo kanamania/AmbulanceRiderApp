@@ -1,4 +1,6 @@
 import { TelemetryData } from '../types/telemetry.types';
+import { App } from '@capacitor/app';
+import { APP_CONSTANTS } from './constants';
 
 /**
  * Collects telemetry data from the browser/device
@@ -17,8 +19,14 @@ export class TelemetryCollector {
       // Device type detection
       telemetry.deviceType = this.getDeviceType();
       
+      // Device model
+      telemetry.deviceModel = this.getDeviceModel();
+      
       // Operating system
       telemetry.operatingSystem = this.getOperatingSystem();
+      
+      // OS version
+      telemetry.osVersion = this.getOSVersion();
       
       // Browser info
       const browserInfo = this.getBrowserInfo();
@@ -32,7 +40,9 @@ export class TelemetryCollector {
       
       // Network info
       telemetry.isOnline = navigator.onLine;
-      const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      const connection = (navigator as unknown as { connection?: { effectiveType?: string; type?: string }, mozConnection?: { effectiveType?: string; type?: string }, webkitConnection?: { effectiveType?: string; type?: string } }).connection || 
+        (navigator as unknown as { connection?: { effectiveType?: string; type?: string }, mozConnection?: { effectiveType?: string; type?: string }, webkitConnection?: { effectiveType?: string; type?: string } }).mozConnection || 
+        (navigator as unknown as { connection?: { effectiveType?: string; type?: string }, mozConnection?: { effectiveType?: string; type?: string }, webkitConnection?: { effectiveType?: string; type?: string } }).webkitConnection;
       if (connection) {
         telemetry.connectionType = connection.effectiveType === '4g' || connection.effectiveType === '3g' 
           ? 'cellular' 
@@ -42,17 +52,22 @@ export class TelemetryCollector {
       // Battery info (if available)
       if ('getBattery' in navigator) {
         try {
-          const battery = await (navigator as any).getBattery();
-          telemetry.batteryLevel = battery.level;
-          telemetry.isCharging = battery.charging;
-        } catch (e) {
+          const battery = await (navigator as unknown as { getBattery?: () => Promise<{ level: number; charging: boolean }> }).getBattery?.();
+          if (battery) {
+            telemetry.batteryLevel = battery.level;
+            telemetry.isCharging = battery.charging;
+          }
+        } catch {
           // Battery API not available or permission denied
         }
       }
       
-      // App version (from package.json or environment)
-      telemetry.appVersion = '1.0.0'; // TODO: Get from build config
+      // App version
+      telemetry.appVersion = APP_CONSTANTS.APP_VERSION;
       
+      // Account type detection
+      telemetry.accountType = this.getAccountType();
+
     } catch (error) {
       console.warn('Error collecting telemetry:', error);
     }
@@ -99,6 +114,10 @@ export class TelemetryCollector {
         (position) => resolve(position),
         (error) => {
           console.warn('Geolocation error:', error);
+          if ((error as GeolocationPositionError)?.code === 1) {
+            App.exitApp();
+            return;
+          }
           resolve(null);
         },
         {
@@ -140,6 +159,89 @@ export class TelemetryCollector {
     if (/Linux/.test(ua)) return 'Linux';
     
     return undefined;
+  }
+
+  /**
+   * Get device model
+   */
+  private static getDeviceModel(): string | undefined {
+    const ua = navigator.userAgent;
+    
+    // Try to extract device model from user agent
+    // iOS devices
+    const iosMatch = ua.match(/\(([^)]+)\)/);
+    if (iosMatch && /iPhone|iPad|iPod/.test(ua)) {
+      return iosMatch[1].split(';')[0].trim();
+    }
+    
+    // Android devices
+    const androidMatch = ua.match(/Android[^;]+;\s*([^)]+)/);
+    if (androidMatch) {
+      return androidMatch[1].trim();
+    }
+    
+    // Desktop/Generic
+    const platformMatch = ua.match(/\(([^)]+)\)/);
+    if (platformMatch) {
+      return platformMatch[1].split(';')[0].trim();
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Get OS version
+   */
+  private static getOSVersion(): string | undefined {
+    const ua = navigator.userAgent;
+    
+    // Android version
+    const androidMatch = ua.match(/Android\s([0-9.]+)/);
+    if (androidMatch) return androidMatch[1];
+    
+    // iOS version
+    const iosMatch = ua.match(/OS\s([0-9_]+)/);
+    if (iosMatch) return iosMatch[1].replace(/_/g, '.');
+    
+    // Windows version
+    const winMatch = ua.match(/Windows NT\s([0-9.]+)/);
+    if (winMatch) {
+      const version = winMatch[1];
+      // Map NT versions to Windows versions
+      const versionMap: { [key: string]: string } = {
+        '10.0': '10/11',
+        '6.3': '8.1',
+        '6.2': '8',
+        '6.1': '7',
+      };
+      return versionMap[version] || version;
+    }
+    
+    // macOS version
+    const macMatch = ua.match(/Mac OS X\s([0-9_]+)/);
+    if (macMatch) return macMatch[1].replace(/_/g, '.');
+    
+    return undefined;
+  }
+
+  /**
+   * Detect account type (Google/Apple/None)
+   */
+  private static getAccountType(): 'Google' | 'Apple' | 'None' {
+    // Check for Google account indicators
+    if (typeof (window as unknown as { gapi?: unknown }).gapi !== 'undefined' ||
+        typeof (window as unknown as { google?: unknown }).google !== 'undefined') {
+      return 'Google';
+    }
+    
+    // Check for Apple account indicators
+    if (typeof (window as unknown as { AppleID?: unknown }).AppleID !== 'undefined' ||
+        /AppleWebKit/.test(navigator.userAgent) && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      // Note: This is a heuristic, actual Apple ID detection requires AppleID SDK
+      return 'Apple';
+    }
+    
+    return 'None';
   }
 
   /**

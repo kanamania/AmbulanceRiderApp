@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   IonContent, 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonButtons, 
-  IonButton, 
+  IonButton,
   IonIcon, 
   useIonToast,
   useIonLoading,
@@ -17,15 +12,13 @@ import {
   IonSelectOption,
   IonToggle,
   IonList,
-  IonTextarea,
   IonAvatar,
   IonChip,
   IonSpinner,
   IonText
 } from '@ionic/react';
 import { 
-  arrowBack, 
-  save, 
+  save,
   trash, 
   personCircle, 
   mail, 
@@ -36,10 +29,10 @@ import {
   add
 } from 'ionicons/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import {useForm, Controller, Resolver} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { User, UserRole } from '../../types/auth.types';
+import { User } from '../../types/auth.types';
 import { userService } from '../../services';
 import { ROLES } from '../../utils/role.utils';
 import {AdminLayout} from '../../layouts/AdminLayout';
@@ -83,9 +76,8 @@ const UserEdit: React.FC = () => {
     handleSubmit, 
     formState: { errors }, 
     reset,
-    setValue
   } = useForm<UserFormData>({
-    resolver: yupResolver(userSchema) as any,
+    resolver: yupResolver(userSchema) as unknown as Resolver<UserFormData>,
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -187,10 +179,11 @@ const UserEdit: React.FC = () => {
       }
       
       navigate('/admin/users');
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error saving user:', error);
       presentToast({
-        message: error.response?.data?.message || 'Failed to save user',
+        message: error.message || 'Failed to save user',
         duration: 3000,
         color: 'danger',
         icon: alertCircle
@@ -270,7 +263,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="firstName"
                 control={control}
-                render={({ field }: any) => (
+                render={({ field }) => (
                   <IonInput 
                     value={field.value} 
                     onIonChange={e => field.onChange(e.detail.value)}
@@ -290,7 +283,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="lastName"
                 control={control}
-                render={({ field }: any) => (
+                render={({ field }) => (
                   <IonInput 
                     value={field.value} 
                     onIonChange={e => field.onChange(e.detail.value)}
@@ -311,7 +304,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="email"
                 control={control}
-                render={({ field }: any) => (
+                render={({ field }) => (
                   <IonInput 
                     value={field.value} 
                     onIonChange={e => field.onChange(e.detail.value)}
@@ -333,7 +326,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="phoneNumber"
                 control={control}
-                render={({ field }: any) => (
+                render={({ field }) => (
                   <IonInput 
                     value={field.value} 
                     onIonChange={e => field.onChange(e.detail.value)}
@@ -356,7 +349,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="roles"
                 control={control}
-                render={({ field: { onChange, value = [] } }: any) => (
+                render={({ field: { onChange, value = [] } }) => (
                   <IonSelect 
                     multiple 
                     value={value}
@@ -385,7 +378,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="isActive"
                 control={control}
-                render={({ field: { value, onChange } }: any) => (
+                render={({ field: { value, onChange } }) => (
                   <IonToggle 
                     checked={value} 
                     onIonChange={e => onChange(e.detail.checked)}
@@ -400,7 +393,7 @@ const UserEdit: React.FC = () => {
               <Controller
                 name="roles"
                 control={control}
-                render={({ field: { value = [] } }: any) => (
+                render={({ field: { value = [] } }) => (
                   <>
                     {value.map((role: string) => (
                       <IonChip key={role} color="primary" outline>

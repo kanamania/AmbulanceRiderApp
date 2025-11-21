@@ -74,8 +74,9 @@ const Register: React.FC = () => {
       setTimeout(() => {
         navigate('/login', { replace: true });
       }, 1500);
-    } catch (error: any) {
-      setToastMessage(error.message || 'Registration failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      setToastMessage(errorMessage);
       setToastColor('danger');
       setShowToast(true);
     } finally {

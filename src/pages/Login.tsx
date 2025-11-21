@@ -17,9 +17,9 @@ import {
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import AppHeader from '../components/AppHeader';
-import { useAuth } from '../contexts/AuthContext';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './Login.css';
+import {useAuth} from "../contexts/useAuth";
 
 const Login: React.FC = () => {
   const { t } = useTranslation();

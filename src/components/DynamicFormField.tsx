@@ -13,10 +13,15 @@ import {
 } from '@ionic/react';
 import { TripTypeAttribute } from '../types';
 
+interface SelectOption {
+  value?: string | number;
+  label?: string;
+}
+
 interface DynamicFormFieldProps {
   attribute: TripTypeAttribute;
-  value: any;
-  onChange: (name: string, value: any) => void;
+  value: unknown;
+  onChange: (name: string, value: unknown) => void;
 }
 
 const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
@@ -24,7 +29,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
   value,
   onChange,
 }) => {
-  const handleChange = (newValue: any) => {
+  const handleChange = (newValue: unknown) => {
     onChange(attribute.name, newValue);
   };
 
@@ -51,6 +56,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
   };
 
   const validationRules = getValidationRules();
+  const options = getOptions();
 
   switch (attribute.dataType) {
     case 'text':
@@ -61,7 +67,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             {attribute.isRequired && <span style={{ color: 'red' }}> *</span>}
           </IonLabel>
           <IonInput
-            value={value || ''}
+            value={(value as string) || ''}
             onIonInput={(e) => handleChange(e.detail.value)}
             placeholder={attribute.placeholder || `Enter ${attribute.label.toLowerCase()}`}
             required={attribute.isRequired}
@@ -82,7 +88,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             {attribute.isRequired && <span style={{ color: 'red' }}> *</span>}
           </IonLabel>
           <IonTextarea
-            value={value || ''}
+            value={(value as string) || ''}
             onIonInput={(e) => handleChange(e.detail.value)}
             placeholder={attribute.placeholder || `Enter ${attribute.label.toLowerCase()}`}
             rows={3}
@@ -105,11 +111,11 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
           </IonLabel>
           <IonInput
             type="number"
-            value={value || ''}
+            value={(value as number | string) || ''}
             onIonInput={(e) => handleChange(e.detail.value ? Number(e.detail.value) : null)}
             placeholder={attribute.placeholder || `Enter ${attribute.label.toLowerCase()}`}
-            min={validationRules.min}
-            max={validationRules.max}
+            min={validationRules.min || undefined}
+            max={validationRules.max || undefined}
             required={attribute.isRequired}
           />
           {attribute.description && (
@@ -131,7 +137,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
           <IonModal keepContentsMounted={true}>
             <IonDatetime
               id={`datetime-${attribute.id}`}
-              value={value || ''}
+              value={(value as string || '') || ''}
               onIonChange={(e) => handleChange(e.detail.value)}
               presentation="date"
             />
@@ -152,7 +158,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             {attribute.isRequired && <span style={{ color: 'red' }}> *</span>}
           </IonLabel>
           <IonCheckbox
-            checked={value || false}
+            checked={(value as boolean) || false}
             onIonChange={(e) => handleChange(e.detail.checked)}
             slot="end"
           />
@@ -165,7 +171,6 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
       );
 
     case 'select':
-      const options = getOptions();
       return (
         <IonItem>
           <IonLabel position="stacked">
@@ -178,11 +183,15 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             placeholder={attribute.placeholder || `Select ${attribute.label.toLowerCase()}`}
             interface="action-sheet"
           >
-            {options.map((option: any, index: number) => (
-              <IonSelectOption key={index} value={option.value || option}>
-                {option.label || option}
-              </IonSelectOption>
-            ))}
+            {options.map((option: SelectOption | string, index: number) => {
+              const optionValue = typeof option === 'string' ? option : (option.value ?? '');
+              const optionLabel = typeof option === 'string' ? option : (option.label ?? '');
+              return (
+                <IonSelectOption key={index} value={optionValue}>
+                  {optionLabel}
+                </IonSelectOption>
+              );
+            })}
           </IonSelect>
           {attribute.description && (
             <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>

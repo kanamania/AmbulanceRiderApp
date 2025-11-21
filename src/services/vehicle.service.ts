@@ -25,7 +25,7 @@ class VehicleService {
     return await apiService.get<VehicleType[]>(API_CONFIG.ENDPOINTS.VEHICLES.TYPES);
   }
 
-  async createVehicle(data: VehicleFormData): Promise<Vehicle> {
+  async createVehicle(data: Partial<Vehicle>): Promise<Vehicle> {
     return await apiService.post<Vehicle>(API_CONFIG.ENDPOINTS.VEHICLES.CREATE, data);
   }
 

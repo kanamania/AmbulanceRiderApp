@@ -2,6 +2,7 @@
 export * from './auth.types';
 export * from './telemetry.types';
 export * from './vehicle.types';
+export * from './database.types';
 
 // Location types
 export interface Location {
@@ -180,49 +181,69 @@ export interface TripType {
 // Trip types
 export interface Trip {
   id: number;
-  userId: number;
-  tripTypeId?: number;
-  vehicleId?: number;
-  fromLocationId?: number;
-  toLocationId?: number;
-  fromAddress: string;
-  toAddress: string;
+  name: string;
+  description?: string;
+  scheduledStartTime: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  status: string;
+  rejectionReason?: string;
+  
   fromLatitude: number;
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  name?: string;
-  emergencyType?: string;
-  notes?: string;
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-  createdAt: string;
-  updatedAt: string;
-  attributeValues?: Record<string, unknown> | Array<Record<string, unknown>>; // Dynamic attribute values
+  fromLocationName: string;
+  toLocationName: string;
+  
+  vehicleId?: number;
   vehicle?: {
     id: number;
-    licensePlate: string;
-    make: string;
-    model: string;
+    name: string;
   };
+  driverId?: string;
+  driver?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  approvedBy?: string;
+  approver?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  approvedAt?: string;
+  createdAt: string;
+  
+  tripTypeId?: number;
+  tripType?: TripType;
+  
+  attributeValues: Array<{ tripTypeAttributeId: number; value: string }>;
+  
+  optimizedRoute?: string;
+  routePolyline?: string;
+  estimatedDistance?: number;
+  estimatedDuration?: number;
 }
 
 export interface CreateTripData {
-  tripTypeId?: number;
-  vehicleId?: number;
-  fromLocationId?: number;
-  toLocationId?: number;
-  fromAddress: string;
-  toAddress: string;
+  name: string;
+  description?: string;
+  scheduledStartTime?: string | null;
   fromLatitude: number;
   fromLongitude: number;
   toLatitude: number;
   toLongitude: number;
-  name?: string;
-  emergencyType?: string;
-  notes?: string;
-  attributeValues?: Record<string, unknown> | Array<Record<string, unknown>>; // Dynamic attribute values
+  fromLocationName?: string;
+  toLocationName?: string;
+  vehicleId?: number;
+  driverId?: string; // GUID as string
+  tripTypeId?: number;
+  attributeValues?: Array<{ tripTypeAttributeId: number; value: string }>; // Dynamic attribute values
   telemetry?: import('./telemetry.types').TelemetryData;
-  scheduledStartTime?: string | null;
 }
 
 // Trip approval request

@@ -48,7 +48,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   tripTypes: TripType[];
-  hasRole: (...roles: string[]) => boolean;
+  hasRole: (...roles: UserRole[]) => boolean;
   getRole: () => string | null;
   getDefaultRoute: () => string;
 }

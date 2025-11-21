@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   IonContent, 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonButtons, 
-  IonButton, 
+  IonButton,
   IonIcon, 
   useIonToast,
   useIonLoading,
@@ -19,7 +14,6 @@ import {
   IonList,
   IonTextarea,
   IonAvatar,
-  IonChip,
   IonSpinner,
   IonText,
   IonDatetime,
@@ -28,8 +22,7 @@ import {
   IonCol
 } from '@ionic/react';
 import { 
-  arrowBack, 
-  save, 
+  save,
   trash, 
   car, 
   checkmarkCircle,
@@ -45,11 +38,11 @@ import {
   add
 } from 'ionicons/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import {useForm, Controller, Resolver} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Vehicle, VehicleStatus, VehicleType } from '../../types/vehicle.types';
-import { vehicleService } from '../../services';
+import { Vehicle, VehicleType } from '../../types/vehicle.types';
+import { vehicleService, fileUploadService } from '../../services';
 import {AdminLayout} from '../../layouts/AdminLayout';
 import './AdminPages.css';
 
@@ -101,17 +94,17 @@ const VehicleEdit: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [vehicle, setVehicle] = useState<Partial<Vehicle> | null>(null);
+  const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const { 
     control, 
     handleSubmit, 
     formState: { errors }, 
     reset,
-    setValue,
     watch
   } = useForm<VehicleFormData>({
-    resolver: yupResolver(vehicleSchema) as any,
+    resolver: yupResolver(vehicleSchema) as unknown as Resolver<VehicleFormData>,
     defaultValues: {
       licensePlate: '',
       make: '',
@@ -129,8 +122,6 @@ const VehicleEdit: React.FC = () => {
     }
   });
 
-  const status = watch('status');
-
   // Load vehicle data if in edit mode
   useEffect(() => {
     const loadData = async () => {
@@ -144,7 +135,6 @@ const VehicleEdit: React.FC = () => {
         if (isEdit && id) {
           // Load vehicle data
           const vehicleData = await vehicleService.getVehicle(parseInt(id!));
-          setVehicle(vehicleData);
           
           // Set form values
           reset({
@@ -160,12 +150,13 @@ const VehicleEdit: React.FC = () => {
             lastMaintenanceDate: vehicleData.lastMaintenanceDate || null,
             nextMaintenanceDate: vehicleData.nextMaintenanceDate || null,
             notes: vehicleData.notes || '',
-            isActive: vehicleData.isActive !== false
+            isActive: vehicleData.isActive
           });
           
           // Set image preview if available
           if (vehicleData.imageUrl) {
             setImagePreview(vehicleData.imageUrl);
+            setUploadedImagePath(vehicleData.imagePath || null);
           }
         }
       } catch (error) {
@@ -183,36 +174,120 @@ const VehicleEdit: React.FC = () => {
     loadData();
   }, [id, isEdit, navigate, presentToast, reset]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file
+    const validation = fileUploadService.validateImageFile(file);
+    if (!validation.valid) {
+      presentToast({
+        message: validation.error || 'Invalid file',
+        duration: 3000,
+        color: 'danger',
+        icon: alertCircle
+      });
+      return;
+    }
+
+    try {
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      // TODO: Upload image to server
+      
+      // Store file for upload on save
+      setImageFile(file);
+      
+      // If editing, upload immediately
+      if (isEdit && id) {
+        await presentLoading('Uploading image...');
+        const response = await fileUploadService.uploadVehicleImage(file);
+        setUploadedImagePath(response.filePath);
+        setImagePreview(response.fileUrl);
+        
+        presentToast({
+          message: 'Image uploaded successfully',
+          duration: 2000,
+          color: 'success',
+          icon: checkmarkCircle
+        });
+        await dismissLoading();
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      await dismissLoading();
+      presentToast({
+        message: 'Failed to upload image',
+        duration: 3000,
+        color: 'danger',
+        icon: alertCircle
+      });
     }
   };
 
-  const removeImage = () => {
-    setImagePreview(null);
-    // TODO: Remove image from server
+  const removeImage = async () => {
+    try {
+      // If there's an uploaded image path, delete it from server
+      if (uploadedImagePath) {
+        await presentLoading('Removing image...');
+        await fileUploadService.deleteVehicleImage(uploadedImagePath);
+        await dismissLoading();
+        
+        presentToast({
+          message: 'Image removed successfully',
+          duration: 2000,
+          color: 'success',
+          icon: checkmarkCircle
+        });
+      }
+      
+      setImagePreview(null);
+      setUploadedImagePath(null);
+      setImageFile(null);
+    } catch (error) {
+      console.error('Error removing image:', error);
+      await dismissLoading();
+      presentToast({
+        message: 'Failed to remove image',
+        duration: 3000,
+        color: 'danger',
+        icon: alertCircle
+      });
+    }
   };
 
   const onSubmit = async (data: VehicleFormData) => {
     try {
       setIsSubmitting(true);
       
+      // Upload image if there's a new file and not editing (for new vehicles)
+      let imagePath = uploadedImagePath;
+      if (imageFile && !isEdit) {
+        try {
+          const response = await fileUploadService.uploadVehicleImage(imageFile);
+          imagePath = response.filePath;
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          presentToast({
+            message: 'Failed to upload image, but continuing with vehicle save',
+            duration: 3000,
+            color: 'warning'
+          });
+        }
+      }
+      
       const vehicleData = {
         ...data,
-        status: data.status as any,
-        // Add any additional fields or transformations here
+        status: data.status as string,
+        imagePath: imagePath || undefined,
       };
       
       if (isEdit && id) {
         // Update existing vehicle
-        await vehicleService.updateVehicle(parseInt(id!), vehicleData as any);
+        await vehicleService.updateVehicle(parseInt(id!), vehicleData as unknown as Vehicle);
         presentToast({
           message: 'Vehicle updated successfully',
           duration: 3000,
@@ -221,7 +296,7 @@ const VehicleEdit: React.FC = () => {
         });
       } else {
         // Create new vehicle
-        await vehicleService.createVehicle(vehicleData as any);
+        await vehicleService.createVehicle(vehicleData as unknown as Vehicle);
         presentToast({
           message: 'Vehicle created successfully',
           duration: 3000,
@@ -231,10 +306,11 @@ const VehicleEdit: React.FC = () => {
       }
       
       navigate('/admin/vehicles');
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error saving vehicle:', error);
       presentToast({
-        message: error.response?.data?.message || 'Failed to save vehicle',
+        message: error.message || 'Failed to save vehicle',
         duration: 3000,
         color: 'danger',
         icon: alertCircle
@@ -346,7 +422,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="licensePlate"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(e.detail.value)}
@@ -369,7 +445,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="vehicleTypeId"
                       control={control}
-                      render={({ field: { onChange, value } }: any) => (
+                      render={({ field: { onChange, value } }) => (
                         <IonSelect 
                           value={value}
                           onIonChange={e => onChange(e.detail.value)}
@@ -399,7 +475,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="make"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(e.detail.value)}
@@ -421,7 +497,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="model"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(e.detail.value)}
@@ -446,7 +522,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="year"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
@@ -473,7 +549,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="color"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(e.detail.value)}
@@ -500,7 +576,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="status"
                       control={control}
-                      render={({ field: { onChange, value } }: { field: { onChange: (val: any) => void, value: any } }) => (
+                      render={({ field: { onChange, value } }: { field: { onChange: (val : string) => void, value: string } }) => (
                         <IonSelect 
                           value={value}
                           onIonChange={e => onChange(e.detail.value)}
@@ -522,7 +598,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="capacity"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
@@ -548,7 +624,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="mileage"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonInput 
                           value={field.value} 
                           onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
@@ -567,7 +643,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="isActive"
                       control={control}
-                      render={({ field: { value, onChange } }: any) => (
+                      render={({ field: { value, onChange } }) => (
                         <IonToggle 
                           checked={value} 
                           onIonChange={e => onChange(e.detail.checked)}
@@ -595,7 +671,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="lastMaintenanceDate"
                       control={control}
-                      render={({ field: { value, onChange } }: any) => (
+                      render={({ field: { value, onChange } }) => (
                         <IonDatetime
                           presentation="date"
                           value={value || undefined}
@@ -613,7 +689,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="nextMaintenanceDate"
                       control={control}
-                      render={({ field: { value, onChange } }: any) => (
+                      render={({ field: { value, onChange } }) => (
                         <IonDatetime
                           presentation="date"
                           value={value || undefined}
@@ -633,7 +709,7 @@ const VehicleEdit: React.FC = () => {
                     <Controller
                       name="notes"
                       control={control}
-                      render={({ field }: any) => (
+                      render={({ field }) => (
                         <IonTextarea 
                           value={field.value} 
                           onIonChange={e => field.onChange(e.detail.value)}

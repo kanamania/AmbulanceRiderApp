@@ -40,24 +40,39 @@ const TripMap: React.FC<TripMapProps> = ({ fromLocation, toLocation, route = [],
     const map = mapRef.current;
     if (!map) return;
 
-    if (routePositions.length > 1) {
-      const bounds = L.latLngBounds(routePositions.map(([lat, lng]) => L.latLng(lat, lng)));
-      map.fitBounds(bounds, { padding: [50, 50] });
-    } else if (fromLocation && toLocation) {
-      const bounds = L.latLngBounds(
-        [fromLocation.lat, fromLocation.lng],
-        [toLocation.lat, toLocation.lng]
-      );
-      map.fitBounds(bounds, { padding: [50, 50] });
-    } else if (fromLocation) {
-      map.setView([fromLocation.lat, fromLocation.lng], 15, { animate: true });
-    } else if (toLocation) {
-      map.setView([toLocation.lat, toLocation.lng], 15, { animate: true });
-    }
+    // Use setTimeout to ensure map is fully rendered before fitting bounds
+    const fitMapBounds = () => {
+      if (routePositions.length > 1) {
+        // If we have a route, fit to the entire route path
+        const bounds = L.latLngBounds(routePositions.map(([lat, lng]) => L.latLng(lat, lng)));
+        map.fitBounds(bounds, { 
+          padding: [60, 60],
+          maxZoom: 15,
+          animate: true
+        });
+      } else if (fromLocation && toLocation) {
+        // If no route yet but have both locations, fit to show both markers
+        const bounds = L.latLngBounds(
+          [fromLocation.lat, fromLocation.lng],
+          [toLocation.lat, toLocation.lng]
+        );
+        map.fitBounds(bounds, { 
+          padding: [60, 60],
+          maxZoom: 15,
+          animate: true
+        });
+      } else if (fromLocation) {
+        map.setView([fromLocation.lat, fromLocation.lng], 15, { animate: true });
+      } else if (toLocation) {
+        map.setView([toLocation.lat, toLocation.lng], 15, { animate: true });
+      }
+    };
 
+    // Invalidate size first, then fit bounds
     setTimeout(() => {
       map.invalidateSize();
-    }, 0);
+      setTimeout(fitMapBounds, 100);
+    }, 100);
   }, [fromLocation, toLocation, routePositions]);
  
   useEffect(() => {
@@ -70,13 +85,24 @@ const TripMap: React.FC<TripMapProps> = ({ fromLocation, toLocation, route = [],
   
   useEffect(() => {
     let cancelled = false;
-    const fetchRoute = async () => {
+    const fetchOrUseProvidedRoute = async () => {
       if (!(fromLocation && toLocation)) {
         setRoutePositions([]);
         setDistanceKm(null);
         if (onRouteDistanceChange && !cancelled) onRouteDistanceChange(null);
         return;
       }
+      // Use provided route if available
+      if (route && route.length > 1) {
+        const coordsFromProp: [number, number][] = route.map(p => [p.lat, p.lng]);
+        if (!cancelled) {
+          setRoutePositions(coordsFromProp);
+          setDistanceKm(null);
+        }
+        if (onRouteDistanceChange && !cancelled) onRouteDistanceChange(null);
+        return;
+      }
+      // Otherwise fetch route from OSRM
       try {
         const url = `https://router.project-osrm.org/route/v1/driving/${fromLocation.lng},${fromLocation.lat};${toLocation.lng},${toLocation.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url);
@@ -95,9 +121,9 @@ const TripMap: React.FC<TripMapProps> = ({ fromLocation, toLocation, route = [],
         if (onRouteDistanceChange && !cancelled) onRouteDistanceChange(null);
       }
     };
-    fetchRoute();
+    fetchOrUseProvidedRoute();
     return () => { cancelled = true; };
-  }, [fromLocation, toLocation]);
+  }, [fromLocation, toLocation, route, onRouteDistanceChange]);
 
   return (
     <div className="map-container" style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>

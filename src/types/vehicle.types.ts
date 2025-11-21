@@ -11,12 +11,14 @@ export interface VehicleType {
 
 export interface Vehicle {
   id: number;
+  name: string;
   licensePlate: string;
   make: string;
   model: string;
   year: number;
   color?: string;
   imageUrl?: string;
+  imagePath?: string;
   vehicleTypeId: number;
   vehicleType?: VehicleType;
   status: VehicleStatus;

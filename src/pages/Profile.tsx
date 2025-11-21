@@ -20,9 +20,9 @@ import {
 } from '@ionic/react';
 import { logOutOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { getUserAvatar } from '../utils/avatar.utils';
 import './Profile.css';
+import {useAuth} from "../contexts/useAuth";
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();

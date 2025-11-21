@@ -8,8 +8,6 @@ import {
   IonButtons,
   IonBackButton,
   IonList,
-  IonItem,
-  IonLabel,
   IonIcon,
   IonBadge,
   IonText,
@@ -36,7 +34,7 @@ interface Notification {
   type: string;
   read: boolean;
   createdAt: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 const NotificationsHistory: React.FC = () => {

@@ -18,7 +18,8 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonText
+  IonText,
+  IonSpinner
 } from '@ionic/react';
 import { 
   notifications,
@@ -32,43 +33,17 @@ import {
   alertCircle
 } from 'ionicons/icons';
 import {AdminLayout} from '../../layouts/AdminLayout';
+import systemSettingsService, { SystemSettings as SystemSettingsType } from '../../services/systemSettings.service';
 import './AdminPages.css';
 
-interface SystemSettings {
-  general: {
-    siteName: string;
-    siteUrl: string;
-    adminEmail: string;
-    timezone: string;
-    dateFormat: string;
-  };
-  notifications: {
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    pushNotifications: boolean;
-    tripStatusUpdates: boolean;
-    newUserRegistrations: boolean;
-  };
-  email: {
-    smtpHost: string;
-    smtpPort: number;
-    smtpUsername: string;
-    smtpPassword: string;
-    fromEmail: string;
-    fromName: string;
-  };
-  security: {
-    requireEmailVerification: boolean;
-    passwordMinLength: number;
-    sessionTimeout: number;
-    maxLoginAttempts: number;
-    enableTwoFactor: boolean;
-  };
-}
+// Use the SystemSettings type from the service
+type SystemSettings = SystemSettingsType;
 
 const SystemSettings: React.FC = () => {
   const [presentToast] = useIonToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
   
   const [settings, setSettings] = useState<SystemSettings>({
     general: {
@@ -102,12 +77,33 @@ const SystemSettings: React.FC = () => {
     }
   });
 
+  // Load settings on mount
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setIsLoading(true);
+        const loadedSettings = await systemSettingsService.getSettings();
+        setSettings(loadedSettings);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        presentToast({
+          message: 'Failed to load settings, using defaults',
+          duration: 3000,
+          color: 'warning',
+          icon: alertCircle
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSettings();
+  }, [presentToast]);
+
   const handleSaveSettings = async () => {
     try {
       setIsSaving(true);
       
-      // TODO: Implement API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await systemSettingsService.updateSettings(settings);
       
       presentToast({
         message: 'Settings saved successfully',
@@ -118,7 +114,7 @@ const SystemSettings: React.FC = () => {
     } catch (error) {
       console.error('Error saving settings:', error);
       presentToast({
-        message: 'Failed to save settings',
+        message: error instanceof Error ? error.message : 'Failed to save settings',
         duration: 3000,
         color: 'danger',
         icon: alertCircle
@@ -131,35 +127,84 @@ const SystemSettings: React.FC = () => {
   const handleBackup = async () => {
     try {
       presentToast({
-        message: 'Backup initiated. You will be notified when complete.',
-        duration: 3000,
+        message: 'Creating backup...',
+        duration: 2000,
         color: 'primary',
         icon: informationCircle
       });
       
-      // TODO: Implement backup functionality
+      const response = await systemSettingsService.createBackup();
+      setLastBackup(response.timestamp);
+      
+      presentToast({
+        message: 'Backup created successfully',
+        duration: 3000,
+        color: 'success',
+        icon: checkmarkCircle
+      });
+      
+      // Download the backup file
+      systemSettingsService.downloadBackup(response.backupFile);
     } catch (error) {
       console.error('Error creating backup:', error);
       presentToast({
-        message: 'Failed to create backup',
+        message: error instanceof Error ? error.message : 'Failed to create backup',
         duration: 3000,
-        color: 'danger'
+        color: 'danger',
+        icon: alertCircle
       });
     }
   };
 
   const handleRestore = () => {
-    // TODO: Implement restore functionality
-    presentToast({
-      message: 'Restore functionality coming soon',
-      duration: 3000,
-      color: 'warning'
-    });
+    // Create file input for backup file selection
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip,.sql,.bak';
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        presentToast({
+          message: 'Restoring from backup...',
+          duration: 2000,
+          color: 'primary',
+          icon: informationCircle
+        });
+        
+        await systemSettingsService.restoreBackup(file);
+        
+        presentToast({
+          message: 'Backup restored successfully. Please refresh the page.',
+          duration: 5000,
+          color: 'success',
+          icon: checkmarkCircle
+        });
+      } catch (error) {
+        console.error('Error restoring backup:', error);
+        presentToast({
+          message: error instanceof Error ? error.message : 'Failed to restore backup',
+          duration: 3000,
+          color: 'danger',
+          icon: alertCircle
+        });
+      }
+    };
+    
+    input.click();
   };
 
   return (
     <AdminLayout title="System Settings">
       <IonContent className="ion-padding">
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+            <IonSpinner name="crescent" />
+          </div>
+        ) : (
+        <>
         <div className="page-header">
           <div>
             <h1>System Settings</h1>
@@ -517,7 +562,9 @@ const SystemSettings: React.FC = () => {
                   
                   <IonText color="medium">
                     <p className="ion-margin-top">
-                      <small>Last backup: Never</small>
+                      <small>
+                        Last backup: {lastBackup ? new Date(lastBackup).toLocaleString() : 'Never'}
+                      </small>
                     </p>
                   </IonText>
                 </IonCardContent>
@@ -525,6 +572,8 @@ const SystemSettings: React.FC = () => {
             </IonCol>
           </IonRow>
         </IonGrid>
+        </>
+        )}
       </IonContent>
     </AdminLayout>
   );

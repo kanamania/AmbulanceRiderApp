@@ -1,8 +1,8 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { IonSpinner, IonContent, IonPage, IonAlert } from '@ionic/react';
-import { useAuth } from '../contexts/AuthContext';
-import { ROLES } from '../utils/role.utils';
+
+import {useAuth} from "../contexts/useAuth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

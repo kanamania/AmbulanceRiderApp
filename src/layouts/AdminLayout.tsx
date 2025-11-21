@@ -1,10 +1,10 @@
 import React, { ReactNode } from 'react';
-import { IonPage, IonSplitPane, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonIcon, IonMenuToggle, IonButtons, IonButton, IonBackButton, IonAvatar } from '@ionic/react';
+import { IonPage, IonSplitPane, IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonIcon, IonMenuToggle, IonButtons, IonButton, IonAvatar } from '@ionic/react';
 import { home, people, car, list, settings, logOut, arrowBack, settingsOutline, location as locationIcon, listCircle } from 'ionicons/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { getUserAvatar } from '../utils/avatar.utils';
 import './AdminLayout.css';
+import {useAuth} from "../contexts/useAuth";
 
 interface AdminLayoutProps {
   children: ReactNode;

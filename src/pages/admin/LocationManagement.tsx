@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   IonContent,
   IonButton,
@@ -37,11 +37,13 @@ const LocationManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locationName, setLocationName] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [latitude, setLatitude] = useState('');
   const [saving, setSaving] = useState(false);
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
 
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
     try {
       setLoading(true);
       const response = await locationService.getAllLocations();
@@ -57,7 +59,7 @@ const LocationManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, presentToast]);
 
   const handleRefresh = async (event: CustomEvent) => {
     await loadLocations();
@@ -81,12 +83,16 @@ const LocationManagement: React.FC = () => {
   const handleAdd = () => {
     setEditingLocation(null);
     setLocationName('');
+    setLongitude('');
+    setLatitude('');
     setShowModal(true);
   };
 
   const handleEdit = (location: Location) => {
     setEditingLocation(location);
     setLocationName(location.name);
+    setLongitude(location.longitude.toString());
+    setLatitude(location.latitude.toString());
     setShowModal(true);
   };
 
@@ -100,18 +106,47 @@ const LocationManagement: React.FC = () => {
       return;
     }
 
+    if (!longitude.trim() || !latitude.trim()) {
+      presentToast({
+        message: 'Longitude and latitude are required',
+        duration: 3000,
+        color: 'warning',
+      });
+      return;
+    }
+
+    const lng = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+
+    if (isNaN(lng) || isNaN(lat)) {
+      presentToast({
+        message: 'Invalid longitude or latitude values',
+        duration: 3000,
+        color: 'warning',
+      });
+      return;
+    }
+
     try {
       setSaving(true);
 
       if (editingLocation) {
-        await locationService.updateLocation(editingLocation.id, { name: locationName });
+        await locationService.updateLocation(editingLocation.id, { 
+          name: locationName,
+          longitude: lng,
+          latitude: lat
+        });
         presentToast({
           message: t('location.locationUpdated'),
           duration: 3000,
           color: 'success',
         });
       } else {
-        await locationService.createLocation({ name: locationName });
+        await locationService.createLocation({ 
+          name: locationName,
+          longitude: lng,
+          latitude: lat
+        });
         presentToast({
           message: t('location.locationCreated'),
           duration: 3000,
@@ -171,7 +206,7 @@ const LocationManagement: React.FC = () => {
 
   useEffect(() => {
     loadLocations();
-  }, []);
+  }, [loadLocations]);
 
   return (
     <AdminLayout title={t('location.locations')}>
@@ -271,6 +306,24 @@ const LocationManagement: React.FC = () => {
                   value={locationName}
                   onIonInput={(e) => setLocationName(e.detail.value || '')}
                   placeholder={t('location.locationName')}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Longitude *</IonLabel>
+                <IonInput
+                  value={longitude}
+                  onIonInput={(e) => setLongitude(e.detail.value || '')}
+                  placeholder="Enter longitude"
+                  type="number"
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Latitude *</IonLabel>
+                <IonInput
+                  value={latitude}
+                  onIonInput={(e) => setLatitude(e.detail.value || '')}
+                  placeholder="Enter latitude"
+                  type="number"
                 />
               </IonItem>
             </IonList>

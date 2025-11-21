@@ -29,13 +29,13 @@ import AppHeader from '../components/AppHeader';
 import TripMap from '../components/TripMap';
 import LocationPicker from '../components/LocationPicker';
 import DynamicFormField from '../components/DynamicFormField';
-import { useAuth } from '../contexts/AuthContext';
 import locationService from '../services/location.service';
 import tripService from '../services/trip.service';
 import notificationService from '../services/notification.service';
 import { Location, CreateTripData, TripType } from '../types';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './Home.css';
+import {useAuth} from "../contexts/useAuth";
 
 interface TripFormData {
   tripTypeId: number | null;
@@ -263,7 +263,7 @@ const Home: React.FC = () => {
     if (formData.name !== auto) {
       setFormData(prev => ({ ...prev, name: auto }));
     }
-  }, [formData.fromAddress, formData.toAddress, nameEdited]);
+  }, [formData.fromAddress, formData.name, formData.toAddress, nameEdited]);
 
   // Handle trip type selection
   const handleTripTypeSelect = (tripTypeId: string) => {
@@ -364,19 +364,20 @@ const Home: React.FC = () => {
       const attributeValuesPayloadFinal = attributeValuesPayload && attributeValuesPayload.length > 0 ? attributeValuesPayload : undefined;
 
       const tripData: CreateTripData = {
-        tripTypeId: formData.tripTypeId || undefined,
-        fromAddress: formData.fromAddress,
-        toAddress: formData.toAddress,
-        fromLatitude: formData.fromLatitude,
-        fromLongitude: formData.fromLongitude,
-        toLatitude: formData.toLatitude,
-        toLongitude: formData.toLongitude,
         name: formData.name,
-        emergencyType: formData.emergencyType || undefined,
-        notes: formData.notes || undefined,
+        description: formData.notes || undefined,
+        scheduledStartTime: formData.scheduledStartTime ?? null,
+        fromLatitude: formData.fromLatitude as number,
+        fromLongitude: formData.fromLongitude as number,
+        toLatitude: formData.toLatitude as number,
+        toLongitude: formData.toLongitude as number,
+        fromLocationName: formData.fromAddress || undefined,
+        toLocationName: formData.toAddress || undefined,
+        vehicleId: undefined,
+        driverId: undefined,
+        tripTypeId: formData.tripTypeId || undefined,
         attributeValues: attributeValuesPayloadFinal,
         telemetry,
-        scheduledStartTime: formData.scheduledStartTime ?? null,
       };
 
       const createdTrip = await tripService.createTrip(tripData);

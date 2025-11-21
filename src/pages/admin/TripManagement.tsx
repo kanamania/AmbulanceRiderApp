@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   IonContent, 
   IonSearchbar,
@@ -7,7 +7,6 @@ import {
   IonSpinner,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
-  useIonAlert,
   useIonToast,
   IonBadge,
   IonChip,
@@ -21,19 +20,21 @@ import {
   list, 
   time, 
   location, 
-  person,
   car,
   checkmarkCircle,
   closeCircle,
   alertCircle,
   hourglass,
-  eye
+  eye,
+  sync,
+  wifi,
+  wifiOutline
 } from 'ionicons/icons';
-import { useNavigate } from 'react-router-dom';
 import {AdminLayout} from '../../layouts/AdminLayout';
 import { Trip } from '../../types';
 import { tripService } from '../../services';
 import './AdminPages.css';
+import {useSync} from "../../contexts/useSync";
 
 const TripManagement: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -43,21 +44,30 @@ const TripManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
-  const navigate = useNavigate();
+  const { syncStatus, forceSync } = useSync();
   const itemsPerPage = 10;
 
-  const loadTrips = async (pageNum: number = 1, refresh: boolean = false) => {
+  const loadTrips = useCallback(async (pageNum: number = 1, refresh: boolean = false) => {
     try {
       setLoading(true);
       
-      // Fetch trips based on status filter
+      // Use sync-aware trip service
       let response;
       if (statusFilter === 'all') {
-        response = await tripService.getAllTrips();
+        response = await tripService.getTripsWithSync();
       } else {
-        response = await tripService.getTripsByStatus(statusFilter);
+        const toApiStatus = (s: string) => {
+          const v = (s || '').toLowerCase();
+          if (v === 'pending') return 'Pending';
+          if (v === 'accepted' || v === 'approved') return 'Approved';
+          if (v === 'rejected') return 'Rejected';
+          if (v === 'in_progress' || v === 'inprogress') return 'InProgress';
+          if (v === 'completed') return 'Completed';
+          if (v === 'cancelled') return 'Cancelled';
+          return s;
+        };
+        response = await tripService.getTripsByStatus(toApiStatus(statusFilter));
       }
       
       // Simulate pagination (if API doesn't support it)
@@ -83,7 +93,7 @@ const TripManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, presentToast]);
 
   const handleRefresh = (event: CustomEvent) => {
     loadTrips(1, true).then(() => {
@@ -104,12 +114,15 @@ const TripManagement: React.FC = () => {
     if (term === '') {
       setFilteredTrips(trips);
     } else {
+      const lc = term.toLowerCase();
       const filtered = trips.filter(trip => {
-        const patientName = trip.attributeValues?.patientName as string | undefined;
-        return trip.fromAddress.toLowerCase().includes(term.toLowerCase()) ||
-          trip.toAddress.toLowerCase().includes(term.toLowerCase()) ||
-          patientName?.toLowerCase().includes(term.toLowerCase()) ||
-          trip.id.toString().includes(term);
+        const fromName = (trip.fromLocationName || '').toLowerCase();
+        const toName = (trip.toLocationName || '').toLowerCase();
+        const tripName = (trip.name || '').toLowerCase();
+        const attrHit = Array.isArray(trip.attributeValues)
+          ? trip.attributeValues.some(av => (av.value || '').toLowerCase().includes(lc))
+          : false;
+        return fromName.includes(lc) || toName.includes(lc) || tripName.includes(lc) || attrHit || trip.id.toString().includes(term);
       });
       setFilteredTrips(filtered);
     }
@@ -122,10 +135,16 @@ const TripManagement: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const normalizeStatus = (s: string) => {
+      const v = (s || '').toLowerCase();
+      if (v === 'accepted' || v === 'approved') return 'approved';
+      if (v === 'inprogress' || v === 'in_progress') return 'in_progress';
+      return v;
+    };
+    switch (normalizeStatus(status)) {
       case 'pending':
         return <IonBadge color="warning">Pending</IonBadge>;
-      case 'accepted':
+      case 'approved':
         return <IonBadge color="primary">Accepted</IonBadge>;
       case 'in_progress':
         return <IonBadge color="tertiary">In Progress</IonBadge>;
@@ -139,10 +158,16 @@ const TripManagement: React.FC = () => {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    const normalizeStatus = (s: string) => {
+      const v = (s || '').toLowerCase();
+      if (v === 'accepted' || v === 'approved') return 'approved';
+      if (v === 'inprogress' || v === 'in_progress') return 'in_progress';
+      return v;
+    };
+    switch (normalizeStatus(status)) {
       case 'pending':
         return hourglass;
-      case 'accepted':
+      case 'approved':
         return checkmarkCircle;
       case 'in_progress':
         return car;
@@ -157,10 +182,43 @@ const TripManagement: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    // Less than a minute
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    }
+    
+    // Less than an hour
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? '1 minute ago' : `${diffInMinutes} minutes ago`;
+    }
+    
+    // Less than a day
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+    }
+    
+    // Less than a week
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      if (diffInDays === 1) {
+        return 'Yesterday at ' + date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      }
+      return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
+    }
+    
+    // More than a week - show formatted date
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -168,7 +226,7 @@ const TripManagement: React.FC = () => {
 
   useEffect(() => {
     loadTrips(1, true);
-  }, [statusFilter]);
+  }, [statusFilter, loadTrips]);
 
   useEffect(() => {
     setFilteredTrips(trips);
@@ -190,6 +248,34 @@ const TripManagement: React.FC = () => {
           <div>
             <h1>Trip Management</h1>
             <p>Monitor and manage all trips in the system</p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {/* Sync Status Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.5rem' }}>
+              <IonIcon 
+                icon={syncStatus.isOnline ? wifi : wifiOutline} 
+                color={syncStatus.isOnline ? 'success' : 'danger'}
+                style={{ fontSize: '1.2rem' }}
+              />
+              {syncStatus.syncInProgress && (
+                <IonIcon 
+                  icon={sync} 
+                  color="primary"
+                  style={{ fontSize: '1.2rem', animation: 'spin 1s linear infinite' }}
+                />
+              )}
+            </div>
+            
+            {/* Force Sync Button */}
+            <IonButton 
+              fill="outline" 
+              size="small"
+              onClick={forceSync}
+              disabled={syncStatus.syncInProgress || !syncStatus.isOnline}
+            >
+              <IonIcon icon={sync} slot="start" />
+              Sync
+            </IonButton>
           </div>
         </div>
 
@@ -290,7 +376,7 @@ const TripManagement: React.FC = () => {
                     <div className="trip-status-indicator" slot="start">
                       <IonIcon 
                         icon={getStatusIcon(trip.status)} 
-                        className={`status-icon status-${trip.status}`}
+                        className={`status-icon status-${(trip.status || '').toLowerCase().replace('inprogress','in_progress').replace('accepted','approved')}`}
                       />
                     </div>
                     
@@ -305,7 +391,7 @@ const TripManagement: React.FC = () => {
                           <IonIcon icon={location} className="detail-icon" />
                           <div className="detail-text">
                             <IonText color="medium" className="detail-label">From</IonText>
-                            <IonText className="detail-value">{trip.fromAddress}</IonText>
+                            <IonText className="detail-value">{trip.fromLocationName}</IonText>
                           </div>
                         </div>
                         
@@ -313,22 +399,10 @@ const TripManagement: React.FC = () => {
                           <IonIcon icon={location} className="detail-icon" />
                           <div className="detail-text">
                             <IonText color="medium" className="detail-label">To</IonText>
-                            <IonText className="detail-value">{trip.toAddress}</IonText>
+                            <IonText className="detail-value">{trip.toLocationName}</IonText>
                           </div>
                         </div>
-                        
-                        {(() => {
-                          const patientName = trip.attributeValues?.patientName;
-                          return patientName && typeof patientName === 'string' ? (
-                            <div className="trip-detail-item">
-                              <IonIcon icon={person} className="detail-icon" />
-                              <div className="detail-text">
-                                <IonText color="medium" className="detail-label">Patient</IonText>
-                                <IonText className="detail-value">{patientName}</IonText>
-                              </div>
-                            </div>
-                          ) : null;
-                        })()}
+
                         
                         <div className="trip-detail-item">
                           <IonIcon icon={time} className="detail-icon" />
