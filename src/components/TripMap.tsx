@@ -30,17 +30,28 @@ const DEFAULT_CENTER: [number, number] = [-6.814716925593744, 39.287831907676]; 
 const ZOOM_LEVEL = 13;
 
 const TripMap: React.FC<TripMapProps> = ({ fromLocation, toLocation, route = [] }) => {
-  const mapRef = useRef<L.Map>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   // Fit map to show all markers when locations change
   useEffect(() => {
-    if ((fromLocation || toLocation) && mapRef.current) {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (fromLocation && toLocation) {
       const bounds = L.latLngBounds(
-        fromLocation ? [fromLocation.lat, fromLocation.lng] : DEFAULT_CENTER,
-        toLocation ? [toLocation.lat, toLocation.lng] : DEFAULT_CENTER
+        [fromLocation.lat, fromLocation.lng],
+        [toLocation.lat, toLocation.lng]
       );
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (fromLocation) {
+      map.setView([fromLocation.lat, fromLocation.lng], 15, { animate: true });
+    } else if (toLocation) {
+      map.setView([toLocation.lat, toLocation.lng], 15, { animate: true });
     }
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
   }, [fromLocation, toLocation]);
 
   return (
