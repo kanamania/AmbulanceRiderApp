@@ -47,31 +47,33 @@ class TripTypeService {
   // Get only active trip types
   async getActiveTripTypes(): Promise<TripType[]> {
     try {
-      // Check cache first and filter active
+
+      // Always check cache first and filter active client-side
       const cachedTripTypes = await cacheService.getTripTypes();
       if (cachedTripTypes.length > 0) {
         const activeTripTypes = cachedTripTypes.filter(tt => tt.isActive);
-        console.log('Active trip types loaded from cache:', activeTripTypes.length);
+        console.log('[TripType Service] ✓ Active trip types filtered from cache:', activeTripTypes.length, '/', cachedTripTypes.length);
         return activeTripTypes;
       }
       
-      // Fetch from API
+      // No cache, fetch from API
+      console.log('[TripType Service] ⚠ Cache empty, fetching from API /api/triptypes/active');
       const response = await apiService.get<TripType[]>(API_CONFIG.ENDPOINTS.TRIP_TYPES.ACTIVE);
       
-      // Update cache (merge with existing to keep inactive ones)
+      // Update cache
       if (response && response.length > 0) {
         await cacheService.upsertTripTypes(response);
-        console.log('Active trip types cached:', response.length);
+        console.log('[TripType Service] ✓ Active trip types fetched and cached:', response.length);
       }
       
       return response;
     } catch (error) {
-      console.error('Error in getActiveTripTypes:', error);
+      console.error('[TripType Service] ✗ Error in getActiveTripTypes:', error);
       // Fallback to cache on error
       const cachedTripTypes = await cacheService.getTripTypes();
       if (cachedTripTypes.length > 0) {
         const activeTripTypes = cachedTripTypes.filter(tt => tt.isActive);
-        console.log('Using cached active trip types due to API error');
+        console.log('[TripType Service] Using cached active trip types due to API error:', activeTripTypes.length);
         return activeTripTypes;
       }
       const message = error instanceof Error ? error.message : 'Failed to fetch active trip types';

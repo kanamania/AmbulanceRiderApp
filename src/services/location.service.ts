@@ -7,29 +7,32 @@ class LocationService {
   // Get all locations
   async getAllLocations(): Promise<LocationPlace[]> {
     try {
+      console.log('[Location Service] getAllLocations() called');
+      
       // Check cache first
       const cachedLocations = await cacheService.getLocations();
       if (cachedLocations.length > 0) {
-        console.log('Locations loaded from cache:', cachedLocations.length);
+        console.log('[Location Service] ✓ Locations loaded from cache:', cachedLocations.length);
         return cachedLocations;
       }
       
-      // Fetch from API
+      // Cache empty - fetch from API
+      console.log('[Location Service] ⚠ Cache empty, fetching from API /api/locations');
       const response = await apiService.get<LocationPlace[]>(API_CONFIG.ENDPOINTS.LOCATIONS.LIST);
       
       // Update cache
       if (response && response.length > 0) {
         await cacheService.upsertLocations(response);
-        console.log('Locations cached:', response.length);
+        console.log('[Location Service] ✓ Locations fetched and cached:', response.length);
       }
       
       return response;
     } catch (error) {
-      console.error('Error in getAllLocations:', error);
+      console.error('[Location Service] ✗ Error in getAllLocations:', error);
       // Fallback to cache on error
       const cachedLocations = await cacheService.getLocations();
       if (cachedLocations.length > 0) {
-        console.log('Using cached locations due to API error');
+        console.log('[Location Service] Using cached locations due to API error');
         return cachedLocations;
       }
       const message = error instanceof Error ? error.message : 'Failed to fetch locations';

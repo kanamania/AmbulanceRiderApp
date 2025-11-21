@@ -22,27 +22,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = AuthService.getUserData();
         // Only restore user if token is still valid
         if (userData && AuthService.isAuthenticated()) {
-          // Load trip types for authenticated users to verify token is valid
+          // Set user directly - sync will happen on first data request
+          setUser(userData);
+          
+          // Load trip types from cache (populated by previous sync)
           try {
             const types = await tripTypeService.getActiveTripTypes();
             setTripTypes(types);
-            // Only set user after successful API call to verify token works
-            setUser(userData);
-            
-            // Initialize SignalR connection for real-time updates
-            try {
-              await signalRService.initialize();
-              console.log('SignalR initialized on app start');
-            } catch (signalRError) {
-              console.error('Error initializing SignalR:', signalRError);
-              // Don't fail auth if SignalR fails
-            }
           } catch (error) {
-            console.error('Error loading trip types:', error);
-            // If trip types fail to load, user might have invalid token
-            // Clear auth data and reset user
-            AuthService.logout();
-            setUser(null);
+            console.log('Trip types will be loaded after sync');
+            // Not critical - will be loaded when needed
+          }
+          
+          // Initialize SignalR connection for real-time updates
+          try {
+            await signalRService.initialize();
+            console.log('SignalR initialized on app start');
+          } catch (signalRError) {
+            console.error('Error initializing SignalR:', signalRError);
+            // Don't fail auth if SignalR fails
           }
         }
       } catch (error) {
@@ -56,18 +54,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
+    // AuthService.login() handles sync and cache population
     const response = await AuthService.login(credentials);
     setUser(response.user);
     
-    // Load trip types after successful login
-    // The token is already set by AuthService.login() before this point
+    // Load trip types from cache (already populated by sync in AuthService.login())
     try {
       const types = await tripTypeService.getActiveTripTypes();
       setTripTypes(types);
+      console.log('[AuthContext] Trip types loaded from cache:', types.length);
     } catch (error) {
-      console.error('Error loading trip types after login:', error);
-      // Don't fail the login if trip types fail to load
-      // User can still use the app
+      console.log('[AuthContext] Trip types will be loaded when needed');
+      // Not critical - components will load from cache when needed
     }
     
     // Initialize SignalR connection for real-time updates

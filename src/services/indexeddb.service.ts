@@ -5,24 +5,51 @@ import { Trip, TripType, LocationPlace, Vehicle, VehicleType } from '../types';
  * Provides local storage for web browsers using IndexedDB
  */
 class IndexedDBService {
+  private static instance: IndexedDBService;
   private db: IDBDatabase | null = null;
   private readonly DB_NAME = 'ambulance_rider_db';
   private readonly DB_VERSION = 2;
+  private initPromise: Promise<void> | null = null;
 
   /**
    * Initialize IndexedDB
    */
   async initialize(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    // If initialization is already in progress, wait for it
+    if (this.initPromise) {
+      console.log('IndexedDB initialization already in progress, waiting...');
+      return this.initPromise;
+    }
+
+    // If already initialized and connection is valid, return immediately
+    if (this.db) {
+      try {
+        // Test if connection is still valid by checking object stores
+        const storeNames = this.db.objectStoreNames;
+        if (storeNames.length > 0) {
+          console.log('IndexedDB already initialized, reusing connection');
+          return Promise.resolve();
+        }
+      } catch (error) {
+        // Connection is closed or invalid, continue to reopen
+        console.log('IndexedDB connection invalid, reinitializing...');
+        this.db = null;
+      }
+    }
+
+    // Store the initialization promise to prevent concurrent initializations
+    this.initPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
       request.onerror = () => {
+        this.initPromise = null; // Clear the promise on error
         console.error('IndexedDB initialization failed:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
+        this.initPromise = null; // Clear the promise after successful initialization
         console.log('IndexedDB initialized successfully');
         resolve();
       };
@@ -106,21 +133,44 @@ class IndexedDBService {
         }
       };
     });
+
+    return this.initPromise;
   }
 
   /**
    * Generic method to get all items from a store
    */
   private async getAll<T>(storeName: string): Promise<T[]> {
+    // Ensure database is initialized before operation
+    await this.initialize();
+    
     if (!this.db) throw new Error('IndexedDB not initialized');
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
+      try {
+        const transaction = this.db!.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+        
+        transaction.onerror = () => {
+          // If transaction fails due to closing connection, mark db as null
+          if (transaction.error?.name === 'InvalidStateError') {
+            console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+            this.db = null;
+          }
+          reject(transaction.error);
+        };
+      } catch (error) {
+        // If we catch InvalidStateError, mark db as null for reinitialization
+        if (error instanceof DOMException && error.name === 'InvalidStateError') {
+          console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+          this.db = null;
+        }
+        reject(error);
+      }
     });
   }
 
@@ -144,16 +194,33 @@ class IndexedDBService {
    * Generic method to upsert items (insert or update)
    */
   private async upsertMany<T extends { id: number }>(storeName: string, items: T[]): Promise<void> {
+    // Ensure database is initialized before operation
+    await this.initialize();
+    
     if (!this.db) throw new Error('IndexedDB not initialized');
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
+      try {
+        const transaction = this.db!.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
 
-      items.forEach(item => store.put(item));
+        items.forEach(item => store.put(item));
 
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => {
+          if (transaction.error?.name === 'InvalidStateError') {
+            console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+            this.db = null;
+          }
+          reject(transaction.error);
+        };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'InvalidStateError') {
+          console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+          this.db = null;
+        }
+        reject(error);
+      }
     });
   }
 
@@ -260,28 +327,66 @@ class IndexedDBService {
 
   // Metadata (for cache timestamps, etc.)
   async setMetadata(key: string, value: unknown): Promise<void> {
+    // Ensure database is initialized before operation
+    await this.initialize();
+    
     if (!this.db) throw new Error('IndexedDB not initialized');
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction('metadata', 'readwrite');
-      const store = transaction.objectStore('metadata');
-      const request = store.put({ key, value, timestamp: Date.now() });
+      try {
+        const transaction = this.db!.transaction('metadata', 'readwrite');
+        const store = transaction.objectStore('metadata');
+        const request = store.put({ key, value, timestamp: Date.now() });
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+        
+        transaction.onerror = () => {
+          if (transaction.error?.name === 'InvalidStateError') {
+            console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+            this.db = null;
+          }
+          reject(transaction.error);
+        };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'InvalidStateError') {
+          console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+          this.db = null;
+        }
+        reject(error);
+      }
     });
   }
 
   async getMetadata(key: string): Promise<unknown> {
+    // Ensure database is initialized before operation
+    await this.initialize();
+    
     if (!this.db) throw new Error('IndexedDB not initialized');
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction('metadata', 'readonly');
-      const store = transaction.objectStore('metadata');
-      const request = store.get(key);
+      try {
+        const transaction = this.db!.transaction('metadata', 'readonly');
+        const store = transaction.objectStore('metadata');
+        const request = store.get(key);
 
-      request.onsuccess = () => resolve(request.result?.value || null);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result?.value || null);
+        request.onerror = () => reject(request.error);
+        
+        transaction.onerror = () => {
+          if (transaction.error?.name === 'InvalidStateError') {
+            console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+            this.db = null;
+          }
+          reject(transaction.error);
+        };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'InvalidStateError') {
+          console.warn('[IndexedDB] Connection closing detected, will reinitialize on next call');
+          this.db = null;
+        }
+        reject(error);
+      }
     });
   }
 
