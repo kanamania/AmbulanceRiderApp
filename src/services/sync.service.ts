@@ -43,9 +43,23 @@ class SyncService {
   }
 
   /**
+   * Check if user is authenticated
+   */
+  private isAuthenticated(): boolean {
+    const token = localStorage.getItem('token');
+    return !!token;
+  }
+
+  /**
    * Perform initial sync after login
    */
   async performInitialSync(): Promise<void> {
+    // Check if user is authenticated
+    if (!this.isAuthenticated()) {
+      console.warn('Cannot sync: User is not authenticated');
+      return;
+    }
+
     if (this.syncInProgress) {
       throw new Error('Sync already in progress');
     }
@@ -90,8 +104,12 @@ class SyncService {
 
   /**
    * Fetch data hashes from API
+   * Requires authentication
    */
   private async fetchDataHashes(): Promise<DataHashResponse> {
+    if (!this.isAuthenticated()) {
+      throw new Error('User must be authenticated to fetch data hashes');
+    }
     return await apiService.get<DataHashResponse>('/auth/data-hashes');
   }
 

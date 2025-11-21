@@ -100,6 +100,13 @@ class BackgroundSyncService {
    * Perform periodic sync
    */
   private async performPeriodicSync(): Promise<void> {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('User not authenticated, skipping periodic sync');
+      return;
+    }
+
     if (!navigator.onLine) {
       console.log('Device is offline, skipping periodic sync');
       return;
