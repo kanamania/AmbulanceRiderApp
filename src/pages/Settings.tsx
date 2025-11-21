@@ -95,8 +95,8 @@ const Settings: React.FC = () => {
         </IonCard>
 
         {/* Admin/Dispatcher Controls */}
-        {isAdminOrDispatcher && (
-          <IonCard>
+        {(isAdminOrDispatcher) && (
+          <IonCard style={{ display: 'none' }}>
             <IonCardHeader>
               <IonCardTitle>{t('settings.adminControls')}</IonCardTitle>
             </IonCardHeader>
