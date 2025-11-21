@@ -5,7 +5,7 @@ import signalRService from '../services/signalr.service';
 import {AuthContextType, LoginCredentials, User, UserRole} from '../types';
 import {TripType} from '../types';
 import {getDefaultRoute, getHighestRole, hasRole} from '../utils/role.utils';
-import {AuthContext} from './useAuth';
+import { AuthContext } from './contexts';
 
 interface AuthProviderProps {
   children: ReactNode;

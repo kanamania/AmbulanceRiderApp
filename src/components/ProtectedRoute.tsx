@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { IonSpinner, IonContent, IonPage, IonAlert } from '@ionic/react';
 
 import {useAuth} from "../contexts/useAuth";
+import { UserRole } from '../types/auth.types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
    * List of roles that are allowed to access this route
    * If not provided, any authenticated user can access the route
    */
-  allowedRoles?: string[];
+  allowedRoles?: UserRole[];
   /**
    * Redirect path when user doesn't have required role
    * Defaults to '/' (home) or login page if not authenticated
