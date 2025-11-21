@@ -61,6 +61,7 @@ const Home: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'danger' | 'success'>('danger');
+  const [nameEdited, setNameEdited] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<TripFormData>({
@@ -169,6 +170,17 @@ const Home: React.FC = () => {
       toLocationId: null, // Clear predefined location when using custom coordinates
     }));
   };
+
+  // Auto-generate trip name from addresses unless user edited it
+  useEffect(() => {
+    if (nameEdited) return;
+    const auto = formData.fromAddress && formData.toAddress
+      ? `${formData.fromAddress} -> ${formData.toAddress}`
+      : '';
+    if (formData.name !== auto) {
+      setFormData(prev => ({ ...prev, name: auto }));
+    }
+  }, [formData.fromAddress, formData.toAddress, nameEdited]);
 
   // Handle trip type selection
   const handleTripTypeSelect = (tripTypeId: string) => {
@@ -285,6 +297,7 @@ const Home: React.FC = () => {
         attributeValues: {},
       });
       setSelectedTripType(null);
+      setNameEdited(false);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create trip request';
       setToastMessage(errorMessage);
@@ -421,6 +434,20 @@ const Home: React.FC = () => {
                 </IonCol>
               </IonRow>
 
+              {/* Trip Name */}
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Trip Name</IonLabel>
+                    <IonInput
+                      value={formData.name}
+                      onIonInput={e => { setFormData(prev => ({ ...prev, name: e.detail.value || '' })); setNameEdited(true); }}
+                      placeholder="e.g., Pickup Address -> Destination Address"
+                    />
+                  </IonItem>
+                </IonCol>
+              </IonRow>
+
               <IonRow>
                 <IonCol size="12">
                   <IonItem>
@@ -522,7 +549,7 @@ const Home: React.FC = () => {
                     onClick={handleSubmit}
                     disabled={submitting}
                   >
-                    Request Ambulance
+                    Request Trip
                   </IonButton>
                 </IonCol>
               </IonRow>

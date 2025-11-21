@@ -106,7 +106,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     const t = setTimeout(async () => {
       try {
         setSearching(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=5`;
+        const viewbox = '39.0,-6.6,39.5,-7.1';
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=5&countrycodes=tz&viewbox=${viewbox}&bounded=1`;
         const res = await fetch(url, { signal: controller.signal, headers: { 'Accept-Language': 'en' } });
         if (!res.ok) throw new Error('Failed to search');
         const data = await res.json();
@@ -257,7 +258,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     ))}
                     {!searching && searchResults.length === 0 && searchQuery.length >= 3 && (
                       <IonItem>
-                        <IonLabel>No results</IonLabel>
+                        <IonLabel>No results in Dar es Salaam</IonLabel>
                       </IonItem>
                     )}
                   </IonList>
