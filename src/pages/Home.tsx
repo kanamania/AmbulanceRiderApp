@@ -160,7 +160,7 @@ const Home: React.FC = () => {
     emergencyType: '',
     notes: '',
     attributeValues: {},
-    scheduledStartTime: nowEATIso(),
+    scheduledStartTime: null,
   });
 
   // Map picker state
@@ -408,7 +408,7 @@ const Home: React.FC = () => {
         emergencyType: '',
         notes: '',
         attributeValues: {},
-        scheduledStartTime: nowEATIso(),
+        scheduledStartTime: null,
       });
       setSelectedTripType(null);
       setNameEdited(false);
