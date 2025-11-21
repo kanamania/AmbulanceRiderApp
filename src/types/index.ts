@@ -197,7 +197,7 @@ export interface Trip {
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
-  attributeValues?: Record<string, unknown>; // Dynamic attribute values
+  attributeValues?: Record<string, unknown> | Array<Record<string, unknown>>; // Dynamic attribute values
   vehicle?: {
     id: number;
     licensePlate: string;
@@ -220,8 +220,9 @@ export interface CreateTripData {
   name?: string;
   emergencyType?: string;
   notes?: string;
-  attributeValues?: Record<string, unknown>; // Dynamic attribute values
+  attributeValues?: Record<string, unknown> | Array<Record<string, unknown>>; // Dynamic attribute values
   telemetry?: import('./telemetry.types').TelemetryData;
+  scheduledStartTime?: string | null;
 }
 
 // Trip approval request

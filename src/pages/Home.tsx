@@ -19,7 +19,9 @@ import {
   IonIcon,
   IonInput,
   IonTextarea,
-  IonToast
+  IonToast,
+  IonDatetime,
+  IonModal
 } from '@ionic/react';
 import { locationOutline, navigateOutline, mapOutline } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +51,7 @@ interface TripFormData {
   emergencyType: string;
   notes: string;
   attributeValues: Record<string, unknown>;
+  scheduledStartTime: string | null;
 }
 
 const Home: React.FC = () => {
@@ -62,6 +65,85 @@ const Home: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'danger' | 'success'>('danger');
   const [nameEdited, setNameEdited] = useState(false);
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+
+  const shortenAddress = (addr: string): string => {
+    if (!addr) return '';
+    const parts = addr
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !/^(tanzania|dar es salaam|tz)$/i.test(s));
+    let out = parts.slice(0, 2).join(', ');
+    if (!out) out = parts[0] || addr;
+    out = out
+      .replace(/\bStreet\b/gi, 'St')
+      .replace(/\bRoad\b/gi, 'Rd')
+      .replace(/\bAvenue\b/gi, 'Ave')
+      .replace(/\bBoulevard\b/gi, 'Blvd')
+      .replace(/\bLane\b/gi, 'Ln')
+      .replace(/\bDrive\b/gi, 'Dr')
+      .replace(/\bCourt\b/gi, 'Ct')
+      .replace(/\bPlace\b/gi, 'Pl')
+      .replace(/\bSquare\b/gi, 'Sq');
+    if (out.length > 40) out = out.slice(0, 37) + '...';
+    return out;
+  };
+
+  const formatDateTime = (iso: string | null): string => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { timeZone: 'Africa/Dar_es_Salaam' });
+    } catch {
+      return '';
+    }
+  };
+
+  const nowEATIso = (): string => {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Dar_es_Salaam',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
+    const y = parts.year;
+    const m = parts.month;
+    const d = parts.day;
+    const hh = parts.hour;
+    const mm = parts.minute;
+    const ss = parts.second;
+    return `${y}-${m}-${d}T${hh}:${mm}:${ss}+03:00`;
+  };
+
+  const toEATIso = (value: string | null): string | null => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return null;
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Dar_es_Salaam',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(date).map(p => [p.type, p.value]));
+    const y = parts.year;
+    const m = parts.month;
+    const d = parts.day;
+    const hh = parts.hour;
+    const mm = parts.minute;
+    const ss = parts.second;
+    return `${y}-${m}-${d}T${hh}:${mm}:${ss}+03:00`;
+  };
 
   // Form state
   const [formData, setFormData] = useState<TripFormData>({
@@ -78,6 +160,7 @@ const Home: React.FC = () => {
     emergencyType: '',
     notes: '',
     attributeValues: {},
+    scheduledStartTime: nowEATIso(),
   });
 
   // Map picker state
@@ -175,7 +258,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     if (nameEdited) return;
     const auto = formData.fromAddress && formData.toAddress
-      ? `${formData.fromAddress} -> ${formData.toAddress}`
+      ? `${shortenAddress(formData.fromAddress)} -> ${shortenAddress(formData.toAddress)}`
       : '';
     if (formData.name !== auto) {
       setFormData(prev => ({ ...prev, name: auto }));
@@ -222,6 +305,16 @@ const Home: React.FC = () => {
       return;
     }
 
+    if (formData.scheduledStartTime) {
+      const scheduledMs = new Date(formData.scheduledStartTime).getTime();
+      if (scheduledMs < Date.now()) {
+        setToastMessage('Please select a future scheduled start time');
+        setToastColor('danger');
+        setShowToast(true);
+        return;
+      }
+    }
+
     if (!formData.name.trim()) {
       setToastMessage('Please trip enter name');
       setToastColor('danger');
@@ -249,10 +342,29 @@ const Home: React.FC = () => {
       // Collect telemetry data with GPS location
       const telemetry = await TelemetryCollector.collectTelemetryWithLocation();
 
+      const attributeValuesPayload = selectedTripType
+        ? selectedTripType.attributes
+            .filter(attr => Object.prototype.hasOwnProperty.call(formData.attributeValues, attr.name))
+            .map(attr => {
+              const raw = (formData.attributeValues as Record<string, unknown>)[attr.name];
+              const value = raw == null
+                ? ''
+                : typeof raw === 'string'
+                  ? raw
+                  : (Array.isArray(raw) || typeof raw === 'object')
+                    ? JSON.stringify(raw)
+                    : String(raw);
+              return {
+                tripTypeAttributeId: attr.id,
+                value,
+              };
+            })
+            .filter(item => item.value.trim() !== '')
+        : undefined;
+      const attributeValuesPayloadFinal = attributeValuesPayload && attributeValuesPayload.length > 0 ? attributeValuesPayload : undefined;
+
       const tripData: CreateTripData = {
         tripTypeId: formData.tripTypeId || undefined,
-        fromLocationId: formData.fromLocationId || undefined,
-        toLocationId: formData.toLocationId || undefined,
         fromAddress: formData.fromAddress,
         toAddress: formData.toAddress,
         fromLatitude: formData.fromLatitude,
@@ -262,8 +374,9 @@ const Home: React.FC = () => {
         name: formData.name,
         emergencyType: formData.emergencyType || undefined,
         notes: formData.notes || undefined,
-        attributeValues: Object.keys(formData.attributeValues).length > 0 ? formData.attributeValues : undefined,
+        attributeValues: attributeValuesPayloadFinal,
         telemetry,
+        scheduledStartTime: formData.scheduledStartTime ?? null,
       };
 
       const createdTrip = await tripService.createTrip(tripData);
@@ -295,6 +408,7 @@ const Home: React.FC = () => {
         emergencyType: '',
         notes: '',
         attributeValues: {},
+        scheduledStartTime: nowEATIso(),
       });
       setSelectedTripType(null);
       setNameEdited(false);
@@ -447,6 +561,51 @@ const Home: React.FC = () => {
                   </IonItem>
                 </IonCol>
               </IonRow>
+
+              {/* Scheduled Start Time (Optional) */}
+              <IonRow>
+                <IonCol size="12">
+                  <IonItem>
+                    <IonLabel position="stacked">Scheduled Start Time (optional)</IonLabel>
+                    <IonInput
+                      value={formatDateTime(formData.scheduledStartTime)}
+                      placeholder={formatDateTime(formData.scheduledStartTime) || 'Now'}
+                      readonly
+                      onClick={() => setShowSchedulePicker(true)}
+                    />
+                  </IonItem>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6, gap: 8 }}>
+                    <IonButton size="small" onClick={() => setShowSchedulePicker(true)}>Pick</IonButton>
+                    <IonButton size="small" fill="outline" onClick={() => setFormData(prev => ({ ...prev, scheduledStartTime: null }))}>Clear</IonButton>
+                  </div>
+                </IonCol>
+              </IonRow>
+
+              <IonModal isOpen={showSchedulePicker} onDidDismiss={() => setShowSchedulePicker(false)}>
+                <div style={{ padding: 16 }}>
+                  <IonDatetime
+                    presentation="date-time"
+                    value={formData.scheduledStartTime ?? undefined}
+                    min={nowEATIso()}
+                    onIonChange={(e) =>
+                      setFormData(prev => ({
+                        ...prev,
+                        scheduledStartTime: toEATIso(
+                          typeof e.detail.value === 'string'
+                            ? e.detail.value
+                            : Array.isArray(e.detail.value)
+                              ? (e.detail.value[0] as string | undefined) || null
+                              : null
+                        ),
+                      }))
+                    }
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}>
+                    <IonButton fill="outline" onClick={() => setShowSchedulePicker(false)}>Cancel</IonButton>
+                    <IonButton onClick={() => setShowSchedulePicker(false)}>Done</IonButton>
+                  </div>
+                </div>
+              </IonModal>
 
               <IonRow>
                 <IonCol size="12">
