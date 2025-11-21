@@ -134,12 +134,11 @@ const Activity: React.FC = () => {
 
   // Filter vehicles based on search text
   const filteredVehicles = useMemo(() => {
+    if (!vehicles || !Array.isArray(vehicles)) return [];
     if (!vehicleSearchText.trim()) return vehicles;
     const searchLower = vehicleSearchText.toLowerCase();
     return vehicles.filter(vehicle => 
-      vehicle.make?.toLowerCase().includes(searchLower) ||
-      vehicle.model?.toLowerCase().includes(searchLower) ||
-      vehicle.licensePlate?.toLowerCase().includes(searchLower) ||
+      vehicle.plateNumber?.toLowerCase().includes(searchLower) ||
       vehicle.name?.toLowerCase().includes(searchLower)
     );
   }, [vehicles, vehicleSearchText]);
@@ -670,7 +669,7 @@ const Activity: React.FC = () => {
                           >
                             {vehicles.map((vehicle) => (
                               <IonSelectOption key={vehicle.id} value={vehicle.id}>
-                                {vehicle.make} {vehicle.model} - {vehicle.licensePlate}
+                                {vehicle.name} - {vehicle.plateNumber}
                               </IonSelectOption>
                             ))}
                           </IonSelect>
@@ -795,7 +794,7 @@ const Activity: React.FC = () => {
               <IonSearchbar
                 value={vehicleSearchText}
                 onIonInput={(e) => setVehicleSearchText(e.detail.value || '')}
-                placeholder="Search by make, model, or license plate"
+                placeholder="Search by name or plate number"
                 debounce={300}
               />
             </IonToolbar>
@@ -824,9 +823,8 @@ const Activity: React.FC = () => {
                   >
                     <IonIcon icon={car} slot="start" color="primary" />
                     <IonLabel>
-                      <h2>{vehicle.make} {vehicle.model}</h2>
-                      <p>License Plate: {vehicle.licensePlate}</p>
-                      {vehicle.name && <p>Name: {vehicle.name}</p>}
+                      <h2>{vehicle.name}</h2>
+                      <p>Plate Number: {vehicle.plateNumber}</p>
                     </IonLabel>
                   </IonItem>
                 ))}

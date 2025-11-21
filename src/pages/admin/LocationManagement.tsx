@@ -24,18 +24,18 @@ import {
 import { add, location as locationIcon, create, trash, close, save } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
 import {AdminLayout} from '../../layouts/AdminLayout';
-import { Location } from '../../types';
+import { LocationPlace } from '../../types';
 import { locationService } from '../../services';
 import './AdminPages.css';
 
 const LocationManagement: React.FC = () => {
   const { t } = useTranslation();
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<LocationPlace[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<LocationPlace[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingLocation, setEditingLocation] = useState<LocationPlace | null>(null);
   const [locationName, setLocationName] = useState('');
   const [longitude, setLongitude] = useState('');
   const [latitude, setLatitude] = useState('');
@@ -88,7 +88,7 @@ const LocationManagement: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (location: Location) => {
+  const handleEdit = (location: LocationPlace) => {
     setEditingLocation(location);
     setLocationName(location.name);
     setLongitude(location.longitude.toString());
@@ -168,7 +168,7 @@ const LocationManagement: React.FC = () => {
     }
   };
 
-  const confirmDelete = (location: Location) => {
+  const confirmDelete = (location: LocationPlace) => {
     presentAlert({
       header: t('messages.confirmDelete'),
       message: `${t('location.deleteLocation')}: ${location.name}?`,

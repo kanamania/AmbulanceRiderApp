@@ -12,23 +12,10 @@ export interface VehicleType {
 export interface Vehicle {
   id: number;
   name: string;
-  licensePlate: string;
-  make: string;
-  model: string;
-  year: number;
-  color?: string;
-  imageUrl?: string;
-  imagePath?: string;
+  plateNumber: string;
+  image?: string;
   vehicleTypeId: number;
   vehicleType?: VehicleType;
-  status: VehicleStatus;
-  capacity: number;
-  mileage?: number;
-  lastMaintenanceDate?: string;
-  nextMaintenanceDate?: string;
-  inServiceSince?: string;
-  notes?: string;
-  isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -43,17 +30,8 @@ export interface VehicleFilters {
 }
 
 export interface VehicleFormData {
-  licensePlate: string;
-  make: string;
-  model: string;
-  year: number;
-  color?: string;
+  name: string;
+  plateNumber: string;
+  image?: File | string;
   vehicleTypeId: number;
-  status: VehicleStatus;
-  capacity: number;
-  mileage?: number;
-  lastMaintenanceDate?: string | null;
-  nextMaintenanceDate?: string | null;
-  notes?: string;
-  isActive: boolean;
 }

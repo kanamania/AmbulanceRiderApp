@@ -1,7 +1,7 @@
 import apiService from './api.service';
 import databaseService from './database.service';
 import {tripService} from './index';
-import {CreateTripData, DataHashResponse, LocalTrip, Location, SyncStatus, Trip, TripType, User} from '../types';
+import {CreateTripData, DataHashResponse, LocalTrip, LocationPlace, SyncStatus, Trip, TripType, User} from '../types';
 import {clearStoredHashes, compareHashes, getStoredHashes, storeHashes} from '../utils/hash.util';
 import {API_CONFIG} from '../config/api.config';
 
@@ -165,7 +165,7 @@ class SyncService {
    */
   private async syncLocations(): Promise<void> {
     try {
-      const response = await apiService.get<Location[]>(API_CONFIG.ENDPOINTS.LOCATIONS.LIST);
+      const response = await apiService.get<LocationPlace[]>(API_CONFIG.ENDPOINTS.LOCATIONS.LIST);
       await databaseService.upsertLocations(response);
       console.log('Locations synced successfully');
     } catch (error) {
@@ -371,7 +371,7 @@ class SyncService {
   /**
    * Get local locations
    */
-  async getLocalLocations(): Promise<Location[]> {
+  async getLocalLocations(): Promise<LocationPlace[]> {
     return await databaseService.getLocations();
   }
 

@@ -1,6 +1,6 @@
 import {jwtDecode, JwtPayload} from 'jwt-decode';
 import apiService from './api.service';
-import { databaseService, syncService } from './index';
+import { databaseService, syncService, dataHashService } from './index';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types';
 
@@ -15,12 +15,24 @@ class AuthService {
 
       this.setAuthData(response);
       
-      // Initialize database and perform initial sync
+      // Initialize database and perform hash-based sync
       try {
         await databaseService.initialize();
-        await syncService.performInitialSync();
+        
+        // Perform hash-based data synchronization
+        const syncResult = await dataHashService.performSync();
+        
+        if (syncResult.success) {
+          console.log('Data sync completed successfully');
+        } else {
+          console.warn('Data sync completed with errors:', syncResult.errors);
+        }
+        
+        if (syncResult.syncedEntities.length > 0) {
+          console.log('Synced entities:', syncResult.syncedEntities);
+        }
       } catch (syncError) {
-        console.warn('Initial sync failed, but login succeeded:', syncError);
+        console.warn('Data sync failed, but login succeeded:', syncError);
         // Don't fail login if sync fails
       }
       
@@ -52,6 +64,7 @@ class AuthService {
     try {
       // Clear all local data and close database
       await syncService.clearAllData();
+      await dataHashService.clearHashes();
       await databaseService.close();
     } catch (error) {
       console.warn('Failed to clear local data during logout:', error);

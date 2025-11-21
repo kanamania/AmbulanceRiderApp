@@ -5,7 +5,7 @@ export * from './vehicle.types';
 export * from './database.types';
 
 // Location types
-export interface Location {
+export interface LocationPlace {
   longitude: number;
   latitude: number;
   id: number;

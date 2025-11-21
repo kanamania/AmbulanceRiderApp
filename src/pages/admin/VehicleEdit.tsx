@@ -10,13 +10,10 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  IonToggle,
   IonList,
-  IonTextarea,
   IonAvatar,
   IonSpinner,
   IonText,
-  IonDatetime,
   IonGrid,
   IonRow,
   IonCol
@@ -29,11 +26,7 @@ import {
   alertCircle,
   camera,
   closeCircle,
-  calendar,
-  speedometer,
   barcode,
-  construct,
-  documentText,
   informationCircle,
   add
 } from 'ionicons/icons';
@@ -41,47 +34,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {useForm, Controller, Resolver} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Vehicle, VehicleType } from '../../types/vehicle.types';
+import { VehicleType } from '../../types/vehicle.types';
 import { vehicleService, fileUploadService } from '../../services';
 import {AdminLayout} from '../../layouts/AdminLayout';
 import './AdminPages.css';
 
 // Validation schema
 const vehicleSchema = yup.object().shape({
-  licensePlate: yup.string().required('License plate is required'),
-  make: yup.string().required('Make is required'),
-  model: yup.string().required('Model is required'),
-  year: yup
-    .number()
-    .typeError('Year must be a number')
-    .min(1900, 'Year must be after 1900')
-    .max(new Date().getFullYear() + 1, 'Year cannot be in the future')
-    .required('Year is required'),
-  color: yup.string().optional(),
-  vehicleTypeId: yup.number().required('Vehicle type is required'),
-  status: yup.string().required('Status is required'),
-  capacity: yup.number().min(1, 'Capacity must be at least 1').required('Capacity is required'),
-  mileage: yup.number().min(0, 'Mileage cannot be negative').optional(),
-  lastMaintenanceDate: yup.string().nullable().optional(),
-  nextMaintenanceDate: yup.string().nullable().optional(),
-  notes: yup.string().optional(),
-  isActive: yup.boolean().default(true)
+  name: yup.string().required('Vehicle name is required'),
+  plateNumber: yup.string().required('Plate number is required'),
+  vehicleTypeId: yup.number().required('Vehicle type is required')
 });
 
 interface VehicleFormData {
-  licensePlate: string;
-  make: string;
-  model: string;
-  year: number;
-  color?: string;
+  name: string;
+  plateNumber: string;
   vehicleTypeId: number;
-  status: string;
-  capacity: number;
-  mileage?: number;
-  lastMaintenanceDate?: string | null;
-  nextMaintenanceDate?: string | null;
-  notes?: string;
-  isActive: boolean;
 }
 
 const VehicleEdit: React.FC = () => {
@@ -101,24 +69,13 @@ const VehicleEdit: React.FC = () => {
     control, 
     handleSubmit, 
     formState: { errors }, 
-    reset,
-    watch
+    reset
   } = useForm<VehicleFormData>({
     resolver: yupResolver(vehicleSchema) as unknown as Resolver<VehicleFormData>,
     defaultValues: {
-      licensePlate: '',
-      make: '',
-      model: '',
-      year: new Date().getFullYear(),
-      color: '',
-      vehicleTypeId: undefined,
-      status: 'available',
-      capacity: 4,
-      mileage: 0,
-      lastMaintenanceDate: null,
-      nextMaintenanceDate: null,
-      notes: '',
-      isActive: true
+      name: '',
+      plateNumber: '',
+      vehicleTypeId: undefined
     }
   });
 
@@ -138,25 +95,15 @@ const VehicleEdit: React.FC = () => {
           
           // Set form values
           reset({
-            licensePlate: vehicleData.licensePlate,
-            make: vehicleData.make,
-            model: vehicleData.model,
-            year: vehicleData.year,
-            color: vehicleData.color || '',
-            vehicleTypeId: vehicleData.vehicleTypeId,
-            status: vehicleData.status,
-            capacity: vehicleData.capacity || 4,
-            mileage: vehicleData.mileage || 0,
-            lastMaintenanceDate: vehicleData.lastMaintenanceDate || null,
-            nextMaintenanceDate: vehicleData.nextMaintenanceDate || null,
-            notes: vehicleData.notes || '',
-            isActive: vehicleData.isActive
+            name: vehicleData.name,
+            plateNumber: vehicleData.plateNumber,
+            vehicleTypeId: vehicleData.vehicleTypeId
           });
           
           // Set image preview if available
-          if (vehicleData.imageUrl) {
-            setImagePreview(vehicleData.imageUrl);
-            setUploadedImagePath(vehicleData.imagePath || null);
+          if (vehicleData.image) {
+            setImagePreview(vehicleData.image);
+            setUploadedImagePath(vehicleData.image);
           }
         }
       } catch (error) {
@@ -263,12 +210,12 @@ const VehicleEdit: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Upload image if there's a new file and not editing (for new vehicles)
-      let imagePath = uploadedImagePath;
-      if (imageFile && !isEdit) {
+      // Upload image if there's a new file
+      let imageUrl = uploadedImagePath;
+      if (imageFile) {
         try {
           const response = await fileUploadService.uploadVehicleImage(imageFile);
-          imagePath = response.filePath;
+          imageUrl = response.fileUrl;
         } catch (error) {
           console.error('Error uploading image:', error);
           presentToast({
@@ -281,13 +228,12 @@ const VehicleEdit: React.FC = () => {
       
       const vehicleData = {
         ...data,
-        status: data.status as string,
-        imagePath: imagePath || undefined,
+        image: imageUrl || undefined,
       };
       
       if (isEdit && id) {
         // Update existing vehicle
-        await vehicleService.updateVehicle(parseInt(id!), vehicleData as unknown as Vehicle);
+        await vehicleService.updateVehicle(parseInt(id!), vehicleData);
         presentToast({
           message: 'Vehicle updated successfully',
           duration: 3000,
@@ -296,7 +242,7 @@ const VehicleEdit: React.FC = () => {
         });
       } else {
         // Create new vehicle
-        await vehicleService.createVehicle(vehicleData as unknown as Vehicle);
+        await vehicleService.createVehicle(vehicleData);
         presentToast({
           message: 'Vehicle created successfully',
           duration: 3000,
@@ -407,20 +353,44 @@ const VehicleEdit: React.FC = () => {
               </div>
             </div>
 
-            {/* Basic Information */}
+            {/* Vehicle Information */}
             <h3 className="section-title">
               <IonIcon icon={informationCircle} className="section-icon" />
-              Basic Information
+              Vehicle Information
             </h3>
             
             <IonGrid>
               <IonRow>
                 <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.licensePlate ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">License Plate <span className="required">*</span></IonLabel>
+                  <IonItem className={`form-group ${errors.name ? 'ion-invalid' : ''}`}>
+                    <IonLabel position="floating">Vehicle Name <span className="required">*</span></IonLabel>
+                    <IonIcon icon={car} slot="start" className="input-icon" />
+                    <Controller
+                      name="name"
+                      control={control}
+                      render={({ field }) => (
+                        <IonInput 
+                          value={field.value} 
+                          onIonChange={e => field.onChange(e.detail.value)}
+                          type="text"
+                          placeholder="Ambulance 1"
+                        />
+                      )}
+                    />
+                    {errors.name && (
+                      <IonText color="danger" className="ion-padding-start">
+                        <small>{errors.name.message}</small>
+                      </IonText>
+                    )}
+                  </IonItem>
+                </IonCol>
+                
+                <IonCol size="12" sizeSm="6">
+                  <IonItem className={`form-group ${errors.plateNumber ? 'ion-invalid' : ''}`}>
+                    <IonLabel position="floating">Plate Number <span className="required">*</span></IonLabel>
                     <IonIcon icon={barcode} slot="start" className="input-icon" />
                     <Controller
-                      name="licensePlate"
+                      name="plateNumber"
                       control={control}
                       render={({ field }) => (
                         <IonInput 
@@ -431,15 +401,17 @@ const VehicleEdit: React.FC = () => {
                         />
                       )}
                     />
-                    {errors.licensePlate && (
+                    {errors.plateNumber && (
                       <IonText color="danger" className="ion-padding-start">
-                        <small>{errors.licensePlate.message}</small>
+                        <small>{errors.plateNumber.message}</small>
                       </IonText>
                     )}
                   </IonItem>
                 </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
+              </IonRow>
+              
+              <IonRow>
+                <IonCol size="12">
                   <IonItem className={`form-group ${errors.vehicleTypeId ? 'ion-invalid' : ''}`}>
                     <IonLabel>Vehicle Type <span className="required">*</span></IonLabel>
                     <Controller
@@ -464,260 +436,6 @@ const VehicleEdit: React.FC = () => {
                         <small>{errors.vehicleTypeId.message}</small>
                       </IonText>
                     )}
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-              
-              <IonRow>
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.make ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Make <span className="required">*</span></IonLabel>
-                    <Controller
-                      name="make"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(e.detail.value)}
-                          type="text"
-                        />
-                      )}
-                    />
-                    {errors.make && (
-                      <IonText color="danger" className="ion-padding-start">
-                        <small>{errors.make.message}</small>
-                      </IonText>
-                    )}
-                  </IonItem>
-                </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.model ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Model <span className="required">*</span></IonLabel>
-                    <Controller
-                      name="model"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(e.detail.value)}
-                          type="text"
-                        />
-                      )}
-                    />
-                    {errors.model && (
-                      <IonText color="danger" className="ion-padding-start">
-                        <small>{errors.model.message}</small>
-                      </IonText>
-                    )}
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-              
-              <IonRow>
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.year ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Year <span className="required">*</span></IonLabel>
-                    <IonIcon icon={calendar} slot="start" className="input-icon" />
-                    <Controller
-                      name="year"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
-                          type="number"
-                        />
-                      )}
-                    />
-                    {errors.year && (
-                      <IonText color="danger" className="ion-padding-start">
-                        <small>{errors.year.message}</small>
-                      </IonText>
-                    )}
-                  </IonItem>
-                </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.color ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Color</IonLabel>
-                    <div 
-                      slot="start" 
-                      className="color-preview"
-                      style={{ backgroundColor: watch('color') || '#cccccc' }}
-                    />
-                    <Controller
-                      name="color"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(e.detail.value)}
-                          type="text"
-                        />
-                      )}
-                    />
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-
-            {/* Status & Capacity */}
-            <h3 className="section-title">
-              <IonIcon icon={speedometer} className="section-icon" />
-              Status & Capacity
-            </h3>
-            
-            <IonGrid>
-              <IonRow>
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.status ? 'ion-invalid' : ''}`}>
-                    <IonLabel>Status <span className="required">*</span></IonLabel>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field: { onChange, value } }: { field: { onChange: (val : string) => void, value: string } }) => (
-                        <IonSelect 
-                          value={value}
-                          onIonChange={e => onChange(e.detail.value)}
-                          interface="action-sheet"
-                        >
-                          <IonSelectOption value="available">Available</IonSelectOption>
-                          <IonSelectOption value="in_use">In Use</IonSelectOption>
-                          <IonSelectOption value="maintenance">Maintenance</IonSelectOption>
-                          <IonSelectOption value="out_of_service">Out of Service</IonSelectOption>
-                        </IonSelect>
-                      )}
-                    />
-                  </IonItem>
-                </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.capacity ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Passenger Capacity <span className="required">*</span></IonLabel>
-                    <Controller
-                      name="capacity"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
-                          type="number"
-                          min="1"
-                        />
-                      )}
-                    />
-                    {errors.capacity && (
-                      <IonText color="danger" className="ion-padding-start">
-                        <small>{errors.capacity.message}</small>
-                      </IonText>
-                    )}
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-              
-              <IonRow>
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className={`form-group ${errors.mileage ? 'ion-invalid' : ''}`}>
-                    <IonLabel position="floating">Current Mileage</IonLabel>
-                    <IonIcon icon={speedometer} slot="start" className="input-icon" />
-                    <Controller
-                      name="mileage"
-                      control={control}
-                      render={({ field }) => (
-                        <IonInput 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(parseInt(e.detail.value || '0'))}
-                          type="number"
-                          min="0"
-                        />
-                      )}
-                    />
-                    <IonText slot="end" color="medium">mi</IonText>
-                  </IonItem>
-                </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className="form-group">
-                    <IonLabel>Active</IonLabel>
-                    <Controller
-                      name="isActive"
-                      control={control}
-                      render={({ field: { value, onChange } }) => (
-                        <IonToggle 
-                          checked={value} 
-                          onIonChange={e => onChange(e.detail.checked)}
-                          slot="end"
-                        />
-                      )}
-                    />
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-
-            {/* Maintenance Information */}
-            <h3 className="section-title">
-              <IonIcon icon={construct} className="section-icon" />
-              Maintenance
-            </h3>
-            
-            <IonGrid>
-              <IonRow>
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className="form-group">
-                    <IonLabel>Last Maintenance</IonLabel>
-                    <IonIcon icon={calendar} slot="start" className="input-icon" />
-                    <Controller
-                      name="lastMaintenanceDate"
-                      control={control}
-                      render={({ field: { value, onChange } }) => (
-                        <IonDatetime
-                          presentation="date"
-                          value={value || undefined}
-                          onIonChange={e => onChange(e.detail.value?.toString() || null)}
-                        />
-                      )}
-                    />
-                  </IonItem>
-                </IonCol>
-                
-                <IonCol size="12" sizeSm="6">
-                  <IonItem className="form-group">
-                    <IonLabel>Next Maintenance Due</IonLabel>
-                    <IonIcon icon={calendar} slot="start" className="input-icon" />
-                    <Controller
-                      name="nextMaintenanceDate"
-                      control={control}
-                      render={({ field: { value, onChange } }) => (
-                        <IonDatetime
-                          presentation="date"
-                          value={value || undefined}
-                          onIonChange={e => onChange(e.detail.value?.toString() || null)}
-                        />
-                      )}
-                    />
-                  </IonItem>
-                </IonCol>
-              </IonRow>
-              
-              <IonRow>
-                <IonCol>
-                  <IonItem className="form-group">
-                    <IonLabel position="stacked">Notes</IonLabel>
-                    <IonIcon icon={documentText} slot="start" className="input-icon" />
-                    <Controller
-                      name="notes"
-                      control={control}
-                      render={({ field }) => (
-                        <IonTextarea 
-                          value={field.value} 
-                          onIonChange={e => field.onChange(e.detail.value)}
-                          rows={4}
-                          placeholder="Any additional notes about this vehicle..."
-                        />
-                      )}
-                    />
                   </IonItem>
                 </IonCol>
               </IonRow>

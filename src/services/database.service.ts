@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { DBTrip, DBTripType, DBUser, DatabaseInitResult } from '../types';
-import { Trip, TripType, Location, User } from '../types';
+import { Trip, TripType, LocationPlace, User, Vehicle, VehicleType } from '../types';
 
 // Database row interfaces
 interface TripRow {
@@ -177,12 +177,48 @@ class DatabaseService {
       )
     `);
 
+    // Create vehicle_types table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS vehicle_types (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        createdAt TEXT NOT NULL,
+        UNIQUE(id)
+      )
+    `);
+
+    // Create vehicles table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS vehicles (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        plateNumber TEXT,
+        image TEXT,
+        vehicleTypeId INTEGER,
+        createdAt TEXT NOT NULL,
+        UNIQUE(id)
+      )
+    `);
+
+    // Create metadata table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        UNIQUE(key)
+      )
+    `);
+
     // Create indexes for better performance
     await this.db.execute(`
       CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status);
       CREATE INDEX IF NOT EXISTS idx_trips_sync_status ON trips(syncStatus);
       CREATE INDEX IF NOT EXISTS idx_trips_created_at ON trips(createdAt);
       CREATE INDEX IF NOT EXISTS idx_trip_types_active ON trip_types(isActive);
+      CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles(status);
+      CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(vehicleTypeId);
     `);
   }
 
@@ -256,7 +292,7 @@ class DatabaseService {
   }
 
   // Locations CRUD operations
-  async upsertLocations(locations: Location[]): Promise<void> {
+  async upsertLocations(locations: LocationPlace[]): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
     for (const location of locations) {
@@ -276,7 +312,7 @@ class DatabaseService {
     }
   }
 
-  async getLocations(): Promise<Location[]> {
+  async getLocations(): Promise<LocationPlace[]> {
     if (!this.db) throw new Error('Database not initialized');
 
     const result = await this.db.query(`SELECT * FROM locations ORDER BY name`);
@@ -423,6 +459,58 @@ class DatabaseService {
     return null;
   }
 
+  // Vehicles CRUD operations
+  async upsertVehicles(vehicles: Vehicle[]): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    for (const vehicle of vehicles) {
+      await this.db.query(`
+        INSERT OR REPLACE INTO vehicles 
+        (id, name, plateNumber, image, vehicleTypeId, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        vehicle.id,
+        vehicle.name,
+        vehicle.plateNumber,
+        vehicle.image,
+        vehicle.vehicleTypeId,
+        vehicle.createdAt || new Date().toISOString()
+      ]);
+    }
+  }
+
+  async getVehicles(): Promise<Vehicle[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.query(`SELECT * FROM vehicles ORDER BY name`);
+    return result.values || [];
+  }
+
+  // Vehicle Types CRUD operations
+  async upsertVehicleTypes(vehicleTypes: VehicleType[]): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    for (const vehicleType of vehicleTypes) {
+      await this.db.query(`
+        INSERT OR REPLACE INTO vehicle_types 
+        (id, name, description, createdAt)
+        VALUES (?, ?, ?, ?)
+      `, [
+        vehicleType.id,
+        vehicleType.name,
+        vehicleType.description,
+        vehicleType.createdAt
+      ]);
+    }
+  }
+
+  async getVehicleTypes(): Promise<VehicleType[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.query(`SELECT * FROM vehicle_types ORDER BY name`);
+    return result.values || [];
+  }
+
   /**
    * Clear all data (useful for logout)
    */
@@ -433,6 +521,9 @@ class DatabaseService {
     await this.db.execute(`DELETE FROM trip_types`);
     await this.db.execute(`DELETE FROM locations`);
     await this.db.execute(`DELETE FROM users`);
+    await this.db.execute(`DELETE FROM vehicles`);
+    await this.db.execute(`DELETE FROM vehicle_types`);
+    await this.db.execute(`DELETE FROM metadata`);
   }
 }
 

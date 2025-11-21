@@ -116,6 +116,9 @@ export const API_CONFIG = {
       USER_TIMESERIES: (userId: string) => `/telemetry/user/${userId}/timeseries`,
       ME_TIMESERIES: '/telemetry/me/timeseries',
     },
+    SYSTEM: {
+      DATA_HASHES: '/system/data',
+    },
   },
 };
 

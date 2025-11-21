@@ -15,8 +15,7 @@ import {
   IonChip,
   IonLabel,
   IonItem,
-  IonAvatar,
-  IonText
+  IonAvatar
 } from '@ionic/react';
 import { add, car, create, trash } from 'ionicons/icons';
 import {AdminLayout} from '../../layouts/AdminLayout';
@@ -90,9 +89,8 @@ const VehicleManagement: React.FC = () => {
       setFilteredVehicles(vehicles);
     } else {
       const filtered = vehicles.filter(vehicle => 
-        vehicle.licensePlate.toLowerCase().includes(term.toLowerCase()) ||
-        vehicle.make?.toLowerCase().includes(term.toLowerCase()) ||
-        vehicle.model?.toLowerCase().includes(term.toLowerCase()) ||
+        vehicle.plateNumber?.toLowerCase().includes(term.toLowerCase()) ||
+        vehicle.name?.toLowerCase().includes(term.toLowerCase()) ||
         vehicle.vehicleType?.name.toLowerCase().includes(term.toLowerCase())
       );
       setFilteredVehicles(filtered);
@@ -140,20 +138,7 @@ const VehicleManagement: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: VehicleStatus) => {
-    switch (status) {
-      case 'available':
-        return <IonBadge color="success">Available</IonBadge>;
-      case 'in_use':
-        return <IonBadge color="warning">In Use</IonBadge>;
-      case 'maintenance':
-        return <IonBadge color="danger">Maintenance</IonBadge>;
-      case 'out_of_service':
-        return <IonBadge color="medium">Out of Service</IonBadge>;
-      default:
-        return <IonBadge>{status}</IonBadge>;
-    }
-  };
+  // Removed unused getStatusBadge function
 
   useEffect(() => {
     loadVehicles(1, true);
@@ -271,8 +256,8 @@ const VehicleManagement: React.FC = () => {
                     routerLink={`/admin/vehicles/${vehicle.id}`}
                   >
                     <IonAvatar slot="start" className="vehicle-avatar">
-                      {vehicle.imageUrl ? (
-                        <img src={vehicle.imageUrl} alt={vehicle.licensePlate} />
+                      {vehicle.image ? (
+                        <img src={vehicle.image} alt={vehicle.plateNumber} />
                       ) : (
                         <IonIcon icon={car} className="vehicle-icon" />
                       )}
@@ -280,21 +265,12 @@ const VehicleManagement: React.FC = () => {
                     
                     <div className="vehicle-info">
                       <h3>
-                        {vehicle.make} {vehicle.model} 
-                        <span className="license-plate">{vehicle.licensePlate}</span>
+                        {vehicle.name} 
+                        <span className="license-plate">{vehicle.plateNumber}</span>
                       </h3>
                       <p className="vehicle-type">
                         {vehicle.vehicleType?.name || 'N/A'}
-                        {vehicle.year && ` • ${vehicle.year}`}
                       </p>
-                      <div className="vehicle-status">
-                        {getStatusBadge(vehicle.status)}
-                        {vehicle.inServiceSince && (
-                          <IonText color="medium" className="in-service-since">
-                            In service since {new Date(vehicle.inServiceSince).getFullYear()}
-                          </IonText>
-                        )}
-                      </div>
                     </div>
                     
                     <div className="vehicle-actions" slot="end" onClick={e => e.stopPropagation()}>

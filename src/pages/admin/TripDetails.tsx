@@ -608,7 +608,7 @@ const TripDetails: React.FC = () => {
                         >
                           {vehicles.map((vehicle) => (
                             <IonSelectOption key={vehicle.id} value={vehicle.id}>
-                              {vehicle.make} {vehicle.model} - {vehicle.licensePlate}
+                              {vehicle.name} - {vehicle.plateNumber}
                             </IonSelectOption>
                           ))}
                         </IonSelect>

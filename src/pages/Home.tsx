@@ -32,7 +32,7 @@ import DynamicFormField from '../components/DynamicFormField';
 import locationService from '../services/location.service';
 import tripService from '../services/trip.service';
 import notificationService from '../services/notification.service';
-import { Location, CreateTripData, TripType } from '../types';
+import { LocationPlace, CreateTripData, TripType } from '../types';
 import { TelemetryCollector } from '../utils/telemetry.util';
 import './Home.css';
 import {useAuth} from "../contexts/useAuth";
@@ -57,7 +57,7 @@ interface TripFormData {
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const { tripTypes, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<LocationPlace[]>([]);
   const [selectedTripType, setSelectedTripType] = useState<TripType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);

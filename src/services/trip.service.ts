@@ -1,4 +1,5 @@
 import apiService from './api.service';
+import cacheService from './cache.service';
 import { syncService } from './index';
 import { API_CONFIG } from '../config/api.config';
 import {
@@ -16,9 +17,31 @@ class TripService {
   // Get all trips for the current user
   async getAllTrips(): Promise<Trip[]> {
     try {
+      // Check cache first
+      const cachedTrips = await cacheService.getTrips();
+      if (cachedTrips.length > 0) {
+        console.log('Trips loaded from cache:', cachedTrips.length);
+        return cachedTrips;
+      }
+      
+      // Fetch from API
       const response = await apiService.get<Trip[]>(API_CONFIG.ENDPOINTS.TRIPS.LIST);
+      
+      // Update cache
+      if (response && response.length > 0) {
+        await cacheService.upsertTrips(response);
+        console.log('Trips cached:', response.length);
+      }
+      
       return response;
     } catch (error) {
+      console.error('Error in getAllTrips:', error);
+      // Fallback to cache on error
+      const cachedTrips = await cacheService.getTrips();
+      if (cachedTrips.length > 0) {
+        console.log('Using cached trips due to API error');
+        return cachedTrips;
+      }
       const message = error instanceof Error ? error.message : 'Failed to fetch trips';
       throw new Error(message);
     }
@@ -27,9 +50,29 @@ class TripService {
   // Get trip by ID
   async getTripById(id: number): Promise<Trip> {
     try {
+      // Check cache first
+      const cachedTrip = await cacheService.getTripById(id);
+      if (cachedTrip) {
+        console.log('Trip loaded from cache:', id);
+        return cachedTrip;
+      }
+      
+      // Fetch from API
       const response = await apiService.get<Trip>(API_CONFIG.ENDPOINTS.TRIPS.GET(id));
+      
+      // Update cache
+      await cacheService.upsertTrips([response]);
+      console.log('Trip cached:', id);
+      
       return response;
     } catch (error) {
+      console.error('Error in getTripById:', error);
+      // Fallback to cache on error
+      const cachedTrip = await cacheService.getTripById(id);
+      if (cachedTrip) {
+        console.log('Using cached trip due to API error:', id);
+        return cachedTrip;
+      }
       const message = error instanceof Error ? error.message : 'Failed to fetch trip';
       throw new Error(message);
     }
@@ -86,6 +129,11 @@ class TripService {
         API_CONFIG.ENDPOINTS.TRIPS.CREATE,
         data
       );
+      
+      // Update cache
+      await cacheService.upsertTrips([response]);
+      console.log('New trip cached:', response.id);
+      
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create trip';
@@ -100,6 +148,11 @@ class TripService {
         API_CONFIG.ENDPOINTS.TRIPS.UPDATE(id),
         data
       );
+      
+      // Update cache
+      await cacheService.upsertTrips([response]);
+      console.log('Updated trip cached:', response.id);
+      
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update trip';
@@ -170,6 +223,11 @@ class TripService {
         API_CONFIG.ENDPOINTS.TRIPS.UPDATE_STATUS(data.id),
         data
       );
+      
+      // Update cache
+      await cacheService.upsertTrips([response]);
+      console.log('Trip status updated in cache:', response.id);
+      
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update trip status';
@@ -194,6 +252,15 @@ class TripService {
   async deleteTrip(id: number): Promise<void> {
     try {
       await apiService.delete(API_CONFIG.ENDPOINTS.TRIPS.DELETE(id));
+      
+      // Remove from cache
+      const trips = await cacheService.getTrips();
+      const updatedTrips = trips.filter(t => t.id !== id);
+      await cacheService.clearTrips();
+      if (updatedTrips.length > 0) {
+        await cacheService.upsertTrips(updatedTrips);
+      }
+      console.log('Trip removed from cache:', id);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete trip';
       throw new Error(message);
