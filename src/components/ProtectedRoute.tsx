@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { IonSpinner, IonContent, IonPage, IonAlert } from '@ionic/react';
 
 import {useAuth} from "../contexts/useAuth";
-import { UserRole } from '../types/auth.types';
+import { UserRole } from '../types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
