@@ -39,6 +39,7 @@ import { useTheme } from '../contexts/useTheme';
 import { getUserAvatar } from '../utils/avatar.utils';
 import './Settings.css';
 import {useAuth} from "../contexts/useAuth";
+import {APP_CONSTANTS} from "../utils";
 
 const Settings: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -256,7 +257,7 @@ const Settings: React.FC = () => {
                 <IonIcon icon={informationCircle} slot="start" color="primary" />
                 <IonLabel>
                   <h2>{t('settings.version')}</h2>
-                  <p>1.0.0</p>
+                  <p>{APP_CONSTANTS.APP_VERSION}</p>
                 </IonLabel>
               </IonItem>
             </IonList>

@@ -14,6 +14,19 @@ export interface DataHashResponse {
 }
 
 /**
+ * Full Data Response from /api/system/data?includeData=true
+ */
+export interface FullDataResponse {
+  hashes: DataHashResponse;
+  data: {
+    trips?: any[];
+    locations?: any[];
+    tripTypes?: any[];
+    vehicles?: any[];
+  };
+}
+
+/**
  * Stored hashes in local cache
  */
 interface StoredHashes {
@@ -30,14 +43,16 @@ interface StoredHashes {
  */
 class DataHashService {
   private readonly HASH_STORAGE_KEY = 'data_hashes';
+  private readonly LOCALSTORAGE_KEY = 'app_data_hashes';
 
   /**
    * Fetch current data hashes from server
+   * Uses /auth/data-hashes endpoint
    */
   async fetchDataHashes(): Promise<DataHashResponse> {
     try {
       const response = await apiService.get<DataHashResponse>(
-        API_CONFIG.ENDPOINTS.SYSTEM.DATA_HASHES
+        API_CONFIG.ENDPOINTS.AUTH.DATA_HASHES
       );
       return response;
     } catch (error) {
@@ -47,20 +62,72 @@ class DataHashService {
   }
 
   /**
-   * Get stored hashes from cache
+   * Fetch all data with hashes from server
+   * Uses /system/data endpoint with optional include params
+   * @param entities - Optional array of entities to fetch. If not provided, fetches all.
    */
-  async getStoredHashes(): Promise<StoredHashes> {
+  async fetchFullData(entities?: string[]): Promise<FullDataResponse> {
     try {
-      const hashes = await cacheService.getMetadata(this.HASH_STORAGE_KEY);
-      return hashes || {};
+      let url = API_CONFIG.ENDPOINTS.SYSTEM.DATA;
+      
+      // If specific entities provided, add query params
+      if (entities && entities.length > 0) {
+        const params = new URLSearchParams();
+        if (entities.includes('trips')) params.append('includeTrips', 'true');
+        if (entities.includes('locations')) params.append('includeLocations', 'true');
+        if (entities.includes('tripTypes')) params.append('includeTripTypes', 'true');
+        if (entities.includes('vehicles')) params.append('includeVehicles', 'true');
+        url = `${url}?${params.toString()}`;
+      }
+      // If no params, backend will return all entities by default
+      
+      const response = await apiService.get<FullDataResponse>(url);
+      return response;
     } catch (error) {
-      console.error('Error getting stored hashes:', error);
-      return {};
+      console.error('Error fetching full data:', error);
+      throw error;
     }
   }
 
   /**
-   * Save hashes to cache
+   * Get stored hashes from cache (with localStorage fallback)
+   */
+  async getStoredHashes(): Promise<StoredHashes> {
+    try {
+      // Try cache first
+      const hashes = await cacheService.getMetadata(this.HASH_STORAGE_KEY);
+      if (hashes && Object.keys(hashes).length > 0) {
+        return hashes;
+      }
+      
+      // Fallback to localStorage
+      const localHashes = this.getStoredHashesFromLocalStorage();
+      return localHashes || {};
+    } catch (error) {
+      console.error('Error getting stored hashes:', error);
+      // Try localStorage as last resort
+      return this.getStoredHashesFromLocalStorage() || {};
+    }
+  }
+
+  /**
+   * Get stored hashes from localStorage (synchronous)
+   */
+  private getStoredHashesFromLocalStorage(): StoredHashes | null {
+    try {
+      const stored = localStorage.getItem(this.LOCALSTORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error reading hashes from localStorage:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save hashes to both cache and localStorage
    */
   async saveHashes(hashes: DataHashResponse): Promise<void> {
     try {
@@ -68,8 +135,18 @@ class DataHashService {
         ...hashes,
         lastSync: new Date().toISOString()
       };
+      
+      // Save to cache
       await cacheService.setMetadata(this.HASH_STORAGE_KEY, storedHashes);
-      console.log('Data hashes saved:', storedHashes);
+      
+      // Also save to localStorage for easy reference
+      try {
+        localStorage.setItem(this.LOCALSTORAGE_KEY, JSON.stringify(storedHashes));
+        console.log('Data hashes saved to cache and localStorage:', storedHashes);
+      } catch (localStorageError) {
+        console.warn('Failed to save hashes to localStorage:', localStorageError);
+        console.log('Data hashes saved to cache only:', storedHashes);
+      }
     } catch (error) {
       console.error('Error saving hashes:', error);
     }
@@ -100,7 +177,65 @@ class DataHashService {
   }
 
   /**
-   * Sync specific entity data
+   * Sync entity from full data response (bulk sync)
+   */
+  private async syncEntityFromFullData(entityName: string, data: FullDataResponse['data']): Promise<void> {
+    console.log(`Syncing ${entityName} from bulk data...`);
+    
+    try {
+      switch (entityName) {
+        case 'trips': {
+          if (data.trips && data.trips.length > 0) {
+            await cacheService.upsertTrips(data.trips);
+            console.log(`Synced ${data.trips.length} trips (bulk)`);
+          } else {
+            console.log('No trips in bulk data');
+          }
+          break;
+        }
+
+        case 'locations': {
+          if (data.locations && data.locations.length > 0) {
+            await cacheService.upsertLocations(data.locations);
+            console.log(`Synced ${data.locations.length} locations (bulk)`);
+          } else {
+            console.log('No locations in bulk data');
+          }
+          break;
+        }
+
+        case 'tripTypes': {
+          if (data.tripTypes && data.tripTypes.length > 0) {
+            await cacheService.upsertTripTypes(data.tripTypes);
+            console.log(`Synced ${data.tripTypes.length} trip types (bulk)`);
+          } else {
+            console.log('No trip types in bulk data');
+          }
+          break;
+        }
+
+        case 'vehicles': {
+          if (data.vehicles && data.vehicles.length > 0) {
+            await cacheService.upsertVehicles(data.vehicles);
+            console.log(`Synced ${data.vehicles.length} vehicles (bulk)`);
+          } else {
+            console.log('No vehicles in bulk data');
+          }
+          break;
+        }
+
+        default:
+          console.warn(`Unknown entity: ${entityName}`);
+      }
+    } catch (error) {
+      console.error(`Error syncing ${entityName} from bulk data:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync specific entity data (individual sync)
+   * Fetches directly from API to ensure fresh data, bypassing service cache logic
    */
   async syncEntity(entityName: string): Promise<void> {
     console.log(`Syncing ${entityName}...`);
@@ -108,31 +243,49 @@ class DataHashService {
     try {
       switch (entityName) {
         case 'trips': {
-          const trips = await tripService.getAllTrips();
-          await cacheService.upsertTrips(trips);
-          console.log(`Synced ${trips.length} trips`);
+          // Fetch directly from API
+          const trips = await apiService.get<any[]>(API_CONFIG.ENDPOINTS.TRIPS.LIST);
+          if (trips && trips.length > 0) {
+            await cacheService.upsertTrips(trips);
+            console.log(`Synced ${trips.length} trips`);
+          } else {
+            console.log('No trips to sync');
+          }
           break;
         }
 
         case 'locations': {
-          const locations = await locationService.getAllLocations();
-          await cacheService.upsertLocations(locations);
-          console.log(`Synced ${locations.length} locations`);
+          // Fetch directly from API
+          const locations = await apiService.get<any[]>(API_CONFIG.ENDPOINTS.LOCATIONS.LIST);
+          if (locations && locations.length > 0) {
+            await cacheService.upsertLocations(locations);
+            console.log(`Synced ${locations.length} locations`);
+          } else {
+            console.log('No locations to sync');
+          }
           break;
         }
 
         case 'tripTypes': {
-          const tripTypes = await tripTypeService.getAllTripTypes();
-          await cacheService.upsertTripTypes(tripTypes);
-          console.log(`Synced ${tripTypes.length} trip types`);
+          // Fetch directly from API
+          const tripTypes = await apiService.get<any[]>(API_CONFIG.ENDPOINTS.TRIP_TYPES.LIST);
+          if (tripTypes && tripTypes.length > 0) {
+            await cacheService.upsertTripTypes(tripTypes);
+            console.log(`Synced ${tripTypes.length} trip types`);
+          } else {
+            console.log('No trip types to sync');
+          }
           break;
         }
 
         case 'vehicles': {
-          const vehiclesResponse = await vehicleService.getVehicles();
-          if (vehiclesResponse.data) {
-            await cacheService.upsertVehicles(vehiclesResponse.data);
-            console.log(`Synced ${vehiclesResponse.data.length} vehicles`);
+          // Fetch directly from API
+          const vehicles = await apiService.get<{ data: any[] }>(API_CONFIG.ENDPOINTS.VEHICLES.LIST);
+          if (vehicles && vehicles.data && vehicles.data.length > 0) {
+            await cacheService.upsertVehicles(vehicles.data);
+            console.log(`Synced ${vehicles.data.length} vehicles (individual)`);
+          } else {
+            console.log('No vehicles to sync');
           }
           break;
         }
@@ -149,6 +302,7 @@ class DataHashService {
   /**
    * Perform full data synchronization
    * Checks hashes and only syncs changed data
+   * Optimization: If 3+ entities need updating, fetch all data in one call
    */
   async performSync(): Promise<{
     success: boolean;
@@ -175,24 +329,69 @@ class DataHashService {
 
       console.log('Entities to sync:', changedEntities);
 
-      // Sync each changed entity
-      for (const entity of changedEntities) {
+      // Optimization: If 3+ entities need updating, fetch all data in one call
+      if (changedEntities.length >= 3) {
+        console.log(`${changedEntities.length} entities changed, fetching in single call...`);
         try {
-          await this.syncEntity(entity);
-          syncedEntities.push(entity);
+          // Fetch only the changed entities
+          const fullData = await this.fetchFullData(changedEntities);
+          
+          // Sync all entities from full data response
+          for (const entity of changedEntities) {
+            try {
+              await this.syncEntityFromFullData(entity, fullData.data);
+              syncedEntities.push(entity);
+            } catch (error) {
+              const errorMsg = `Failed to sync ${entity}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+            }
+          }
+          
+          // Save hashes from full data response
+          if (errors.length === 0) {
+            await this.saveHashes(fullData.hashes);
+            console.log('Data synchronization completed successfully (bulk)');
+          }
         } catch (error) {
-          const errorMsg = `Failed to sync ${entity}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.error(errorMsg);
-          errors.push(errorMsg);
+          console.error('Bulk sync failed, falling back to individual calls:', error);
+          // Fallback to individual calls
+          for (const entity of changedEntities) {
+            try {
+              await this.syncEntity(entity);
+              syncedEntities.push(entity);
+            } catch (error) {
+              const errorMsg = `Failed to sync ${entity}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+            }
+          }
+          
+          if (errors.length === 0) {
+            await this.saveHashes(serverHashes);
+          }
         }
-      }
-
-      // Save new hashes if all syncs succeeded
-      if (errors.length === 0) {
-        await this.saveHashes(serverHashes);
-        console.log('Data synchronization completed successfully');
       } else {
-        console.warn('Data synchronization completed with errors');
+        // 1-2 entities: Use individual API calls
+        console.log('1-2 entities changed, using individual API calls...');
+        for (const entity of changedEntities) {
+          try {
+            await this.syncEntity(entity);
+            syncedEntities.push(entity);
+          } catch (error) {
+            const errorMsg = `Failed to sync ${entity}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            console.error(errorMsg);
+            errors.push(errorMsg);
+          }
+        }
+
+        // Save new hashes if all syncs succeeded
+        if (errors.length === 0) {
+          await this.saveHashes(serverHashes);
+          console.log('Data synchronization completed successfully (individual)');
+        } else {
+          console.warn('Data synchronization completed with errors');
+        }
       }
 
       return {
@@ -234,12 +433,21 @@ class DataHashService {
   }
 
   /**
-   * Clear stored hashes (useful for testing or reset)
+   * Clear stored hashes from both cache and localStorage
    */
   async clearHashes(): Promise<void> {
     try {
+      // Clear from cache
       await cacheService.setMetadata(this.HASH_STORAGE_KEY, {});
-      console.log('Stored hashes cleared');
+      
+      // Clear from localStorage
+      try {
+        localStorage.removeItem(this.LOCALSTORAGE_KEY);
+        console.log('Stored hashes cleared from cache and localStorage');
+      } catch (localStorageError) {
+        console.warn('Failed to clear hashes from localStorage:', localStorageError);
+        console.log('Stored hashes cleared from cache only');
+      }
     } catch (error) {
       console.error('Error clearing hashes:', error);
     }

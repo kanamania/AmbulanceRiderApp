@@ -7,7 +7,7 @@ import { Trip, TripType, LocationPlace, Vehicle, VehicleType } from '../types';
 class IndexedDBService {
   private db: IDBDatabase | null = null;
   private readonly DB_NAME = 'ambulance_rider_db';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 2;
 
   /**
    * Initialize IndexedDB
@@ -29,12 +29,16 @@ class IndexedDBService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const oldVersion = event.oldVersion;
+        const transaction = (event.target as IDBOpenDBRequest).transaction!;
 
-        // Create object stores
+        // Create object stores (version 1)
         if (!db.objectStoreNames.contains('trips')) {
           const tripStore = db.createObjectStore('trips', { keyPath: 'id' });
           tripStore.createIndex('status', 'status', { unique: false });
           tripStore.createIndex('createdAt', 'createdAt', { unique: false });
+          tripStore.createIndex('isLocal', 'isLocal', { unique: false });
+          tripStore.createIndex('syncStatus', 'syncStatus', { unique: false });
         }
 
         if (!db.objectStoreNames.contains('tripTypes')) {
@@ -48,15 +52,57 @@ class IndexedDBService {
 
         if (!db.objectStoreNames.contains('vehicles')) {
           const vehicleStore = db.createObjectStore('vehicles', { keyPath: 'id' });
-          vehicleStore.createIndex('status', 'status', { unique: false });
+          vehicleStore.createIndex('plateNumber', 'plateNumber', { unique: false });
+          vehicleStore.createIndex('vehicleTypeId', 'vehicleTypeId', { unique: false });
+          vehicleStore.createIndex('name', 'name', { unique: false });
         }
 
         if (!db.objectStoreNames.contains('vehicleTypes')) {
-          db.createObjectStore('vehicleTypes', { keyPath: 'id' });
+          const vehicleTypeStore = db.createObjectStore('vehicleTypes', { keyPath: 'id' });
+          vehicleTypeStore.createIndex('name', 'name', { unique: false });
         }
 
         if (!db.objectStoreNames.contains('metadata')) {
           db.createObjectStore('metadata', { keyPath: 'key' });
+        }
+
+        // Migration from version 1 to version 2
+        if (oldVersion < 2) {
+          // Add new indexes to existing stores
+          if (db.objectStoreNames.contains('trips')) {
+            const tripStore = transaction.objectStore('trips');
+            if (!tripStore.indexNames.contains('isLocal')) {
+              tripStore.createIndex('isLocal', 'isLocal', { unique: false });
+            }
+            if (!tripStore.indexNames.contains('syncStatus')) {
+              tripStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+            }
+          }
+
+          if (db.objectStoreNames.contains('vehicles')) {
+            const vehicleStore = transaction.objectStore('vehicles');
+            // Remove old status index if it exists
+            if (vehicleStore.indexNames.contains('status')) {
+              vehicleStore.deleteIndex('status');
+            }
+            // Add new indexes
+            if (!vehicleStore.indexNames.contains('plateNumber')) {
+              vehicleStore.createIndex('plateNumber', 'plateNumber', { unique: false });
+            }
+            if (!vehicleStore.indexNames.contains('vehicleTypeId')) {
+              vehicleStore.createIndex('vehicleTypeId', 'vehicleTypeId', { unique: false });
+            }
+            if (!vehicleStore.indexNames.contains('name')) {
+              vehicleStore.createIndex('name', 'name', { unique: false });
+            }
+          }
+
+          if (db.objectStoreNames.contains('vehicleTypes')) {
+            const vehicleTypeStore = transaction.objectStore('vehicleTypes');
+            if (!vehicleTypeStore.indexNames.contains('name')) {
+              vehicleTypeStore.createIndex('name', 'name', { unique: false });
+            }
+          }
         }
       };
     });

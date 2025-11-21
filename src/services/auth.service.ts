@@ -1,6 +1,6 @@
 import {jwtDecode, JwtPayload} from 'jwt-decode';
 import apiService from './api.service';
-import { databaseService, syncService, dataHashService } from './index';
+import { cacheService, syncService, dataHashService } from './index';
 import { API_CONFIG, STORAGE_KEYS } from '../config/api.config';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types';
 
@@ -15,9 +15,9 @@ class AuthService {
 
       this.setAuthData(response);
       
-      // Initialize database and perform hash-based sync
+      // Initialize cache service and perform hash-based sync
       try {
-        await databaseService.initialize();
+        await cacheService.initialize();
         
         // Perform hash-based data synchronization
         const syncResult = await dataHashService.performSync();
@@ -62,10 +62,9 @@ class AuthService {
   // Logout user
   async logout(): Promise<void> {
     try {
-      // Clear all local data and close database
+      // Clear all local data
       await syncService.clearAllData();
       await dataHashService.clearHashes();
-      await databaseService.close();
     } catch (error) {
       console.warn('Failed to clear local data during logout:', error);
     } finally {

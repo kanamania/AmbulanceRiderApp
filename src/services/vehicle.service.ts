@@ -6,23 +6,46 @@ import { Vehicle, VehicleType, VehicleFilters, VehicleFormData, PaginatedRespons
 class VehicleService {
   async getVehicles(filters?: VehicleFilters): Promise<PaginatedResponse<Vehicle>> {
     try {
-      // Check cache first if no filters
-      const useCache = !filters || (!filters.page && !filters.search && !filters.vehicleTypeId);
+      // Always check cache first
+      const cachedVehicles = await cacheService.getVehicles();
       
-      if (useCache) {
-        const cachedVehicles = await cacheService.getVehicles();
-        if (cachedVehicles.length > 0) {
-          console.log('Vehicles loaded from cache:', cachedVehicles.length);
-          return {
-            data: cachedVehicles,
-            total: cachedVehicles.length,
-            page: 1,
-            pageSize: cachedVehicles.length
-          };
+      // If we have cached data, use it and apply filters client-side
+      if (cachedVehicles.length > 0) {
+        console.log('Vehicles loaded from cache:', cachedVehicles.length);
+        
+        let filteredData = [...cachedVehicles];
+        
+        // Apply search filter
+        if (filters?.search) {
+          const searchLower = filters.search.toLowerCase();
+          filteredData = filteredData.filter(v => 
+            v.name?.toLowerCase().includes(searchLower) ||
+            v.plateNumber?.toLowerCase().includes(searchLower)
+          );
         }
+        
+        // Apply vehicle type filter
+        if (filters?.vehicleTypeId) {
+          filteredData = filteredData.filter(v => v.vehicleTypeId === filters.vehicleTypeId);
+        }
+        
+        // Apply pagination
+        const page = filters?.page || 1;
+        const limit = filters?.limit || filteredData.length;
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        return {
+          data: paginatedData,
+          total: filteredData.length,
+          page: page,
+          pageSize: limit
+        };
       }
       
-      // Fetch from API
+      // No cache, fetch from API
+      console.log('No cached vehicles, fetching from API');
       const params = new URLSearchParams();
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.limit) params.append('limit', filters.limit.toString());
@@ -33,8 +56,8 @@ class VehicleService {
         `${API_CONFIG.ENDPOINTS.VEHICLES.LIST}?${params.toString()}`
       );
       
-      // Update cache if fetching all vehicles
-      if (useCache && response.data) {
+      // Cache the fetched data
+      if (response.data && response.data.length > 0) {
         await cacheService.upsertVehicles(response.data);
         console.log('Vehicles cached:', response.data.length);
       }
@@ -46,11 +69,30 @@ class VehicleService {
       const cachedVehicles = await cacheService.getVehicles();
       if (cachedVehicles.length > 0) {
         console.log('Using cached vehicles due to API error');
+        
+        // Apply filters even in error case
+        let filteredData = [...cachedVehicles];
+        if (filters?.search) {
+          const searchLower = filters.search.toLowerCase();
+          filteredData = filteredData.filter(v => 
+            v.name?.toLowerCase().includes(searchLower) ||
+            v.plateNumber?.toLowerCase().includes(searchLower)
+          );
+        }
+        if (filters?.vehicleTypeId) {
+          filteredData = filteredData.filter(v => v.vehicleTypeId === filters.vehicleTypeId);
+        }
+        
+        const page = filters?.page || 1;
+        const limit = filters?.limit || filteredData.length;
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        
         return {
-          data: cachedVehicles,
-          total: cachedVehicles.length,
-          page: 1,
-          pageSize: cachedVehicles.length
+          data: filteredData.slice(startIndex, endIndex),
+          total: filteredData.length,
+          page: page,
+          pageSize: limit
         };
       }
       throw error;

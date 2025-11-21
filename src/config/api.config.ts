@@ -47,6 +47,7 @@ export const API_CONFIG = {
       REGISTER: '/auth/register',
       FORGOT_PASSWORD: '/auth/forgot-password',
       RESET_PASSWORD: '/auth/reset-password',
+      DATA_HASHES: '/auth/data-hashes',
     },
     USERS: {
       LIST: '/users',
@@ -117,7 +118,7 @@ export const API_CONFIG = {
       ME_TIMESERIES: '/telemetry/me/timeseries',
     },
     SYSTEM: {
-      DATA_HASHES: '/system/data',
+      DATA: '/system/data', // Full data endpoint with optional include params
     },
   },
 };

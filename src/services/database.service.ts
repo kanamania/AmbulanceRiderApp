@@ -183,7 +183,9 @@ class DatabaseService {
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
+        icon TEXT,
         createdAt TEXT NOT NULL,
+        updatedAt TEXT,
         UNIQUE(id)
       )
     `);
@@ -197,6 +199,7 @@ class DatabaseService {
         image TEXT,
         vehicleTypeId INTEGER,
         createdAt TEXT NOT NULL,
+        updatedAt TEXT,
         UNIQUE(id)
       )
     `);
@@ -217,8 +220,8 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_trips_sync_status ON trips(syncStatus);
       CREATE INDEX IF NOT EXISTS idx_trips_created_at ON trips(createdAt);
       CREATE INDEX IF NOT EXISTS idx_trip_types_active ON trip_types(isActive);
-      CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles(status);
       CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(vehicleTypeId);
+      CREATE INDEX IF NOT EXISTS idx_vehicles_name ON vehicles(name);
     `);
   }
 
@@ -466,15 +469,16 @@ class DatabaseService {
     for (const vehicle of vehicles) {
       await this.db.query(`
         INSERT OR REPLACE INTO vehicles 
-        (id, name, plateNumber, image, vehicleTypeId, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (id, name, plateNumber, image, vehicleTypeId, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `, [
         vehicle.id,
         vehicle.name,
         vehicle.plateNumber,
         vehicle.image,
         vehicle.vehicleTypeId,
-        vehicle.createdAt || new Date().toISOString()
+        vehicle.createdAt || new Date().toISOString(),
+        vehicle.updatedAt
       ]);
     }
   }
@@ -493,13 +497,15 @@ class DatabaseService {
     for (const vehicleType of vehicleTypes) {
       await this.db.query(`
         INSERT OR REPLACE INTO vehicle_types 
-        (id, name, description, createdAt)
-        VALUES (?, ?, ?, ?)
+        (id, name, description, icon, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
       `, [
         vehicleType.id,
         vehicleType.name,
         vehicleType.description,
-        vehicleType.createdAt
+        vehicleType.icon,
+        vehicleType.createdAt,
+        vehicleType.updatedAt
       ]);
     }
   }
