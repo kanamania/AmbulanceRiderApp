@@ -546,6 +546,17 @@ const Activity: React.FC = () => {
                     {getStatusBadge(trip.status)}
                   </div>
 
+                  {trip.creator && (
+                    <IonItem lines="none">
+                      <IonIcon icon={car} slot="start" color="success" />
+                      <IonLabel>
+                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.creator')}</p>
+                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>
+                          {trip.creator.name}
+                        </h3>
+                      </IonLabel>
+                    </IonItem>
+                  )}
                   {trip.vehicle && (
                     <IonItem lines="none">
                       <IonIcon icon={car} slot="start" color="success" />
@@ -610,6 +621,7 @@ const Activity: React.FC = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexDirection: 'column' }}>
                       <IonCardTitle>Trip #{selectedTrip.id} - {selectedTrip.name}</IonCardTitle>
                       <small>{getStatusBadge(selectedTrip.status)}</small>
+                      <p>Requestor: {selectedTrip.creator?.name} - {selectedTrip.creator?.company.name}</p>
                       <p>{formatDate(selectedTrip.createdAt)}</p>
                     </div>
                   </IonCardHeader>

@@ -5,6 +5,9 @@ export * from './vehicle.types';
 export * from './database.types';
 
 // Location types
+export interface Company {
+  name: string;
+}
 export interface LocationPlace {
   longitude: number;
   latitude: number;
@@ -210,11 +213,9 @@ export interface Trip {
   };
   createdById?: string;
   creator?: {
+    company: Company;
     id: string;
-    name?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
+    name: string;
   };
   approvedBy?: string;
   approver?: {
