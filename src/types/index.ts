@@ -208,6 +208,14 @@ export interface Trip {
     lastName?: string;
     email?: string;
   };
+  createdById?: string;
+  creator?: {
+    id: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
   approvedBy?: string;
   approver?: {
     id: string;

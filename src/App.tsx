@@ -10,6 +10,7 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import {settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
+import geIcon from '../public/ge-icon.png';
 import Home from './pages/Home';
 import Activity from './pages/Activity';
 import Login from './pages/Login';

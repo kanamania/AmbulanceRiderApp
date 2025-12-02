@@ -66,8 +66,6 @@ const Settings: React.FC = () => {
 
   return (
     <IonPage>
-      <AppHeader title={t('navigation.settings')} />
-
       <IonContent className="ion-padding">
         {/* Profile Section */}
         <IonCard button onClick={() => navigate('/tabs/profile')}>

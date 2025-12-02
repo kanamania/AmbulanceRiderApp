@@ -40,12 +40,12 @@ import {
   person
 } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
-import AppHeader from '../components/AppHeader';
 import TripMap from '../components/TripMap';
 import { tripService, vehicleService, notificationService } from '../services';
 import { Trip, Vehicle } from '../types';
 import './Activity.css';
 import {useAuth} from "../contexts/useAuth";
+import {getNormalizedStatus, getStatusStyle} from '../utils/statusStyles';
 
 const Activity: React.FC = () => {
   const { t } = useTranslation();
@@ -69,12 +69,15 @@ const Activity: React.FC = () => {
 
   const isAdminOrDispatcher = hasRole('Admin', 'Dispatcher');
 
-  const normalizeStatus = useCallback((status: string) => {
-    const s = (status || '').toLowerCase();
-    if (s === 'accepted') return 'approved';
-    if (s === 'inprogress') return 'in_progress';
-    return s;
-  }, []);
+  const normalizeStatus = useCallback((status: string) => getNormalizedStatus(status), []);
+
+  const getDisplayName = (user?: { name?: string; firstName?: string; lastName?: string; email?: string }) => {
+    if (!user) return '';
+    if (user.name && user.name.trim().length > 0) return user.name;
+    const composed = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    if (composed.length > 0) return composed;
+    return user.email ?? '';
+  };
 
   const filterTrips = useCallback((tripsData: Trip[], status: string) => {
     if (status === 'all') {
@@ -283,19 +286,28 @@ const Activity: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (normalizeStatus(status)) {
+    const normalized = normalizeStatus(status);
+    const { background, color } = getStatusStyle(normalized);
+    const badgeStyle = {
+      '--background': background,
+      '--color': color
+    } as React.CSSProperties;
+
+    switch (normalized) {
       case 'pending':
-        return <IonBadge color="warning">Pending</IonBadge>;
+        return <IonBadge style={badgeStyle}>{t('trip.pending')}</IonBadge>;
       case 'approved':
-        return <IonBadge color="primary">Accepted</IonBadge>;
+        return <IonBadge style={badgeStyle}>{t('trip.approved')}</IonBadge>;
       case 'in_progress':
-        return <IonBadge color="tertiary">In Progress</IonBadge>;
+        return <IonBadge style={badgeStyle}>{t('trip.inProgress')}</IonBadge>;
       case 'completed':
-        return <IonBadge color="success">Completed</IonBadge>;
+        return <IonBadge style={badgeStyle}>{t('trip.completed')}</IonBadge>;
       case 'cancelled':
-        return <IonBadge color="danger">Cancelled</IonBadge>;
+        return <IonBadge style={badgeStyle}>{t('trip.cancelled')}</IonBadge>;
+      case 'rejected':
+        return <IonBadge style={badgeStyle}>{t('trip.rejected')}</IonBadge>;
       default:
-        return <IonBadge>{status}</IonBadge>;
+        return <IonBadge style={badgeStyle}>{status}</IonBadge>;
     }
   };
 
@@ -442,69 +454,65 @@ const Activity: React.FC = () => {
     cancelled: trips.filter((t) => normalizeStatus(t.status) === 'cancelled').length,
   };
 
+  const renderStatusChip = (
+    statusKey: string,
+    label: string,
+    count: number
+  ) => {
+    if (count <= 0) return null;
+    const normalized = normalizeStatus(statusKey);
+    const { background, color } = getStatusStyle(normalized);
+    const isSelected = normalizeStatus(statusFilter) === normalized;
+
+    const chipStyle = {
+      border: `1px solid ${background}`,
+      '--color': isSelected ? color : background,
+      '--background': isSelected ? background : 'transparent'
+    } as React.CSSProperties;
+
+    const badgeStyle = {
+      '--background': background,
+      '--color': color,
+      marginLeft: '8px'
+    } as React.CSSProperties;
+
+    return (
+      <IonChip
+        key={statusKey}
+        outline={!isSelected}
+        style={chipStyle}
+        onClick={() => handleStatusFilter(statusKey)}
+      >
+        <IonLabel>{label}</IonLabel>
+        <IonBadge style={badgeStyle}>
+          {count}
+        </IonBadge>
+      </IonChip>
+    );
+  };
+
   return (
     <IonPage>
-      <AppHeader title={t('navigation.trips')} />
-
       <IonContent className="ion-padding">
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
 
-        <div className="status-filters" style={{ marginBottom: '16px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <div className="status-filters" style={{ marginBottom: '16px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px' }}>
           <IonChip
             outline={statusFilter !== 'all'}
             color={statusFilter === 'all' ? 'primary' : 'medium'}
             onClick={() => handleStatusFilter('all')}
           >
             <IonLabel>{t('common.all')}</IonLabel>
-            <IonBadge color={statusFilter === 'all' ? 'primary' : 'medium'}>{tripCounts.all}</IonBadge>
+            <IonBadge color={statusFilter === 'all' ? 'primary' : 'medium'} style={{ marginLeft: '8px' }}>{tripCounts.all}</IonBadge>
           </IonChip>
 
-          <IonChip
-            outline={statusFilter !== 'pending'}
-            color={statusFilter === 'pending' ? 'warning' : 'medium'}
-            onClick={() => handleStatusFilter('pending')}
-          >
-            <IonLabel>{t('trip.pending')}</IonLabel>
-            <IonBadge color={statusFilter === 'pending' ? 'warning' : 'medium'}>{tripCounts.pending}</IonBadge>
-          </IonChip>
-
-          <IonChip
-            outline={statusFilter !== 'accepted'}
-            color={statusFilter === 'accepted' ? 'primary' : 'medium'}
-            onClick={() => handleStatusFilter('accepted')}
-          >
-            <IonLabel>{t('trip.approved')}</IonLabel>
-            <IonBadge color={statusFilter === 'accepted' ? 'primary' : 'medium'}>{tripCounts.accepted}</IonBadge>
-          </IonChip>
-
-          <IonChip
-            outline={statusFilter !== 'in_progress'}
-            color={statusFilter === 'in_progress' ? 'tertiary' : 'medium'}
-            onClick={() => handleStatusFilter('in_progress')}
-          >
-            <IonLabel>{t('trip.inProgress')}</IonLabel>
-            <IonBadge color={statusFilter === 'in_progress' ? 'tertiary' : 'medium'}>{tripCounts.in_progress}</IonBadge>
-          </IonChip>
-
-          <IonChip
-            outline={statusFilter !== 'completed'}
-            color={statusFilter === 'completed' ? 'success' : 'medium'}
-            onClick={() => handleStatusFilter('completed')}
-          >
-            <IonLabel>{t('trip.completed')}</IonLabel>
-            <IonBadge color={statusFilter === 'completed' ? 'success' : 'medium'}>{tripCounts.completed}</IonBadge>
-          </IonChip>
-
-          <IonChip
-            outline={statusFilter !== 'cancelled'}
-            color={statusFilter === 'cancelled' ? 'danger' : 'medium'}
-            onClick={() => handleStatusFilter('cancelled')}
-          >
-            <IonLabel>{t('trip.cancelled')}</IonLabel>
-            <IonBadge color={statusFilter === 'cancelled' ? 'danger' : 'medium'}>{tripCounts.cancelled}</IonBadge>
-          </IonChip>
+          {renderStatusChip('pending', t('trip.pending'), tripCounts.pending)}
+          {renderStatusChip('accepted', t('trip.approved'), tripCounts.accepted)}
+          {renderStatusChip('in_progress', t('trip.inProgress'), tripCounts.in_progress)}
+          {renderStatusChip('completed', t('trip.completed'), tripCounts.completed)}
+          {renderStatusChip('cancelled', t('trip.cancelled'), tripCounts.cancelled)}
         </div>
 
         {loading ? (
@@ -524,7 +532,10 @@ const Activity: React.FC = () => {
                 <IonCardContent>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <IonIcon icon={getStatusIcon(trip.status)} color={trip.status === 'completed' ? 'success' : trip.status === 'cancelled' ? 'danger' : 'primary'} />
+                      <IonIcon
+                        icon={getStatusIcon(trip.status)}
+                        style={{ color: getStatusStyle(normalizeStatus(trip.status)).background }}
+                      />
                       <strong>Trip #{trip.id} - {trip.name}</strong>
                       {trip.estimatedDistance != null && (
                         <small style={{ color: '#666' }}>
@@ -547,14 +558,22 @@ const Activity: React.FC = () => {
                     </IonItem>
                   )}
 
-                  {trip.driver && (
+                  {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.creator && (
+                    <IonItem lines="none">
+                      <IonIcon icon={person} slot="start" color="medium" />
+                      <IonLabel>
+                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.creator')}</p>
+                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{getDisplayName(trip.creator)}</h3>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+
+                  {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.driver && (
                     <IonItem lines="none">
                       <IonIcon icon={person} slot="start" color="primary" />
                       <IonLabel>
-                        <p style={{ fontSize: '12px', color: '#666' }}>Driver</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>
-                          {trip.driver.firstName} {trip.driver.lastName}
-                        </h3>
+                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.driver')}</p>
+                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{getDisplayName(trip.driver)}</h3>
                       </IonLabel>
                     </IonItem>
                   )}

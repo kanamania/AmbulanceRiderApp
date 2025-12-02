@@ -68,7 +68,6 @@ const Login: React.FC = () => {
 
   return (
     <IonPage>
-      <AppHeader title={t('auth.loginTitle')} />
       <IonContent className="ion-padding login-content">
         <div className="login-container">
           <IonCard className="login-card">

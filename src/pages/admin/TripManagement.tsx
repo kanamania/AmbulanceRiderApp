@@ -35,6 +35,7 @@ import { Trip } from '../../types';
 import { tripService } from '../../services';
 import './AdminPages.css';
 import {useSync} from "../../contexts/useSync";
+import {getNormalizedStatus, getStatusStyle} from '../../utils/statusStyles';
 
 const TripManagement: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -58,14 +59,23 @@ const TripManagement: React.FC = () => {
         response = await tripService.getTripsWithSync();
       } else {
         const toApiStatus = (s: string) => {
-          const v = (s || '').toLowerCase();
-          if (v === 'pending') return 'Pending';
-          if (v === 'accepted' || v === 'approved') return 'Approved';
-          if (v === 'rejected') return 'Rejected';
-          if (v === 'in_progress' || v === 'inprogress') return 'InProgress';
-          if (v === 'completed') return 'Completed';
-          if (v === 'cancelled') return 'Cancelled';
-          return s;
+          const normalized = getNormalizedStatus(s);
+          switch (normalized) {
+            case 'pending':
+              return 'Pending';
+            case 'approved':
+              return 'Approved';
+            case 'rejected':
+              return 'Rejected';
+            case 'in_progress':
+              return 'InProgress';
+            case 'completed':
+              return 'Completed';
+            case 'cancelled':
+              return 'Cancelled';
+            default:
+              return s;
+          }
         };
         response = await tripService.getTripsByStatus(toApiStatus(statusFilter));
       }
@@ -135,36 +145,33 @@ const TripManagement: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const normalizeStatus = (s: string) => {
-      const v = (s || '').toLowerCase();
-      if (v === 'accepted' || v === 'approved') return 'approved';
-      if (v === 'inprogress' || v === 'in_progress') return 'in_progress';
-      return v;
-    };
-    switch (normalizeStatus(status)) {
+    const normalized = getNormalizedStatus(status);
+    const { background, color } = getStatusStyle(normalized);
+    const style = {
+      '--background': background,
+      '--color': color
+    } as React.CSSProperties;
+
+    switch (normalized) {
       case 'pending':
-        return <IonBadge color="warning">Pending</IonBadge>;
+        return <IonBadge style={style}>Pending</IonBadge>;
       case 'approved':
-        return <IonBadge color="primary">Accepted</IonBadge>;
+        return <IonBadge style={style}>Accepted</IonBadge>;
       case 'in_progress':
-        return <IonBadge color="tertiary">In Progress</IonBadge>;
+        return <IonBadge style={style}>In Progress</IonBadge>;
       case 'completed':
-        return <IonBadge color="success">Completed</IonBadge>;
+        return <IonBadge style={style}>Completed</IonBadge>;
       case 'cancelled':
-        return <IonBadge color="danger">Cancelled</IonBadge>;
+        return <IonBadge style={style}>Cancelled</IonBadge>;
+      case 'rejected':
+        return <IonBadge style={style}>Rejected</IonBadge>;
       default:
-        return <IonBadge>{status}</IonBadge>;
+        return <IonBadge style={style}>{status}</IonBadge>;
     }
   };
 
   const getStatusIcon = (status: string) => {
-    const normalizeStatus = (s: string) => {
-      const v = (s || '').toLowerCase();
-      if (v === 'accepted' || v === 'approved') return 'approved';
-      if (v === 'inprogress' || v === 'in_progress') return 'in_progress';
-      return v;
-    };
-    switch (normalizeStatus(status)) {
+    switch (getNormalizedStatus(status)) {
       case 'pending':
         return hourglass;
       case 'approved':
@@ -179,6 +186,8 @@ const TripManagement: React.FC = () => {
         return alertCircle;
     }
   };
+
+  const getStatusColor = (status: string) => getStatusStyle(getNormalizedStatus(status)).background;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -234,11 +243,46 @@ const TripManagement: React.FC = () => {
 
   const tripCounts = {
     all: trips.length,
-    pending: trips.filter(t => t.status === 'pending').length,
-    accepted: trips.filter(t => t.status === 'accepted').length,
-    in_progress: trips.filter(t => t.status === 'in_progress').length,
-    completed: trips.filter(t => t.status === 'completed').length,
-    cancelled: trips.filter(t => t.status === 'cancelled').length
+    pending: trips.filter(t => getNormalizedStatus(t.status) === 'pending').length,
+    accepted: trips.filter(t => getNormalizedStatus(t.status) === 'approved').length,
+    in_progress: trips.filter(t => getNormalizedStatus(t.status) === 'in_progress').length,
+    completed: trips.filter(t => getNormalizedStatus(t.status) === 'completed').length,
+    cancelled: trips.filter(t => getNormalizedStatus(t.status) === 'cancelled').length
+  };
+
+  const renderStatusChip = (
+    statusKey: string,
+    label: string,
+    count: number
+  ) => {
+    if (count <= 0) return null;
+    const normalized = getNormalizedStatus(statusKey);
+    const { background, color } = getStatusStyle(normalized);
+    const isSelected = getNormalizedStatus(statusFilter) === normalized;
+
+    const chipStyle = {
+      border: `1px solid ${background}`,
+      '--background': isSelected ? background : 'transparent',
+      '--color': isSelected ? color : background
+    } as React.CSSProperties;
+
+    const badgeStyle = {
+      '--background': background,
+      '--color': color,
+      marginLeft: '8px'
+    } as React.CSSProperties;
+
+    return (
+      <IonChip
+        key={statusKey}
+        outline={!isSelected}
+        style={chipStyle}
+        onClick={() => handleStatusFilter(statusKey)}
+      >
+        <IonLabel>{label}</IonLabel>
+        <IonBadge style={badgeStyle}>{count}</IonBadge>
+      </IonChip>
+    );
   };
 
   return (
@@ -303,50 +347,15 @@ const TripManagement: React.FC = () => {
               <IonBadge color={statusFilter === 'all' ? 'primary' : 'medium'}>{tripCounts.all}</IonBadge>
             </IonChip>
             
-            <IonChip 
-              outline={statusFilter !== 'pending'}
-              color={statusFilter === 'pending' ? 'warning' : 'medium'}
-              onClick={() => handleStatusFilter('pending')}
-            >
-              <IonLabel>Pending</IonLabel>
-              <IonBadge color={statusFilter === 'pending' ? 'warning' : 'medium'}>{tripCounts.pending}</IonBadge>
-            </IonChip>
+            {renderStatusChip('pending', 'Pending', tripCounts.pending)}
             
-            <IonChip 
-              outline={statusFilter !== 'accepted'}
-              color={statusFilter === 'accepted' ? 'primary' : 'medium'}
-              onClick={() => handleStatusFilter('accepted')}
-            >
-              <IonLabel>Accepted</IonLabel>
-              <IonBadge color={statusFilter === 'accepted' ? 'primary' : 'medium'}>{tripCounts.accepted}</IonBadge>
-            </IonChip>
+            {renderStatusChip('accepted', 'Accepted', tripCounts.accepted)}
             
-            <IonChip 
-              outline={statusFilter !== 'in_progress'}
-              color={statusFilter === 'in_progress' ? 'tertiary' : 'medium'}
-              onClick={() => handleStatusFilter('in_progress')}
-            >
-              <IonLabel>In Progress</IonLabel>
-              <IonBadge color={statusFilter === 'in_progress' ? 'tertiary' : 'medium'}>{tripCounts.in_progress}</IonBadge>
-            </IonChip>
+            {renderStatusChip('in_progress', 'In Progress', tripCounts.in_progress)}
             
-            <IonChip 
-              outline={statusFilter !== 'completed'}
-              color={statusFilter === 'completed' ? 'success' : 'medium'}
-              onClick={() => handleStatusFilter('completed')}
-            >
-              <IonLabel>Completed</IonLabel>
-              <IonBadge color={statusFilter === 'completed' ? 'success' : 'medium'}>{tripCounts.completed}</IonBadge>
-            </IonChip>
+            {renderStatusChip('completed', 'Completed', tripCounts.completed)}
             
-            <IonChip 
-              outline={statusFilter !== 'cancelled'}
-              color={statusFilter === 'cancelled' ? 'danger' : 'medium'}
-              onClick={() => handleStatusFilter('cancelled')}
-            >
-              <IonLabel>Cancelled</IonLabel>
-              <IonBadge color={statusFilter === 'cancelled' ? 'danger' : 'medium'}>{tripCounts.cancelled}</IonBadge>
-            </IonChip>
+            {renderStatusChip('cancelled', 'Cancelled', tripCounts.cancelled)}
           </div>
         </div>
 
@@ -376,6 +385,7 @@ const TripManagement: React.FC = () => {
                     <div className="trip-status-indicator" slot="start">
                       <IonIcon 
                         icon={getStatusIcon(trip.status)} 
+                        style={{ color: getStatusColor(trip.status) }}
                         className={`status-icon status-${(trip.status || '').toLowerCase().replace('inprogress','in_progress').replace('accepted','approved')}`}
                       />
                     </div>

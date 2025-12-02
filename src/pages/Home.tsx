@@ -23,9 +23,8 @@ import {
   IonDatetime,
   IonModal
 } from '@ionic/react';
-import { locationOutline, navigateOutline, mapOutline } from 'ionicons/icons';
+import { locationOutline, navigateOutline, navigateCircleOutline } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
-import AppHeader from '../components/AppHeader';
 import TripMap from '../components/TripMap';
 import LocationPicker from '../components/LocationPicker';
 import DynamicFormField from '../components/DynamicFormField';
@@ -426,8 +425,6 @@ const Home: React.FC = () => {
 
   return (
     <IonPage>
-      <AppHeader title={t('trip.bookTrip')} />
-      
       <IonContent className="ion-padding">
         <IonLoading isOpen={loading || submitting} message={submitting ? t('common.loading') : t('common.loading')} />
         
@@ -450,7 +447,7 @@ const Home: React.FC = () => {
               </IonRow>
               
               <IonRow>
-                <IonCol size="12" sizeMd="8">
+                <IonCol size="12" sizeMd="11">
                   <IonItem>
                     <IonLabel position="stacked">Select Predefined Location</IonLabel>
                     <IonSelect 
@@ -467,15 +464,16 @@ const Home: React.FC = () => {
                     </IonSelect>
                   </IonItem>
                 </IonCol>
-                <IonCol size="12" sizeMd="4">
+                <IonCol size="12" sizeMd="1">
                   <IonButton 
                     expand="block" 
-                    fill="outline"
-                    onClick={() => setShowFromPicker(true)}
+                    fill="default"
                     style={{ marginTop: '20px' }}
                   >
-                    <IonIcon icon={mapOutline} slot="start" />
-                    Pick on Map
+                    <IonIcon
+                        size="large"
+                        color="primary"
+                        icon={navigateCircleOutline} slot="start" />
                   </IonButton>
                 </IonCol>
               </IonRow>
@@ -505,7 +503,7 @@ const Home: React.FC = () => {
               </IonRow>
               
               <IonRow>
-                <IonCol size="12" sizeMd="8">
+                <IonCol size="12" sizeMd="11">
                   <IonItem>
                     <IonLabel position="stacked">Select Predefined Location</IonLabel>
                     <IonSelect 
@@ -522,15 +520,17 @@ const Home: React.FC = () => {
                     </IonSelect>
                   </IonItem>
                 </IonCol>
-                <IonCol size="12" sizeMd="4">
-                  <IonButton 
-                    expand="block" 
-                    fill="outline"
-                    onClick={() => setShowToPicker(true)}
+                <IonCol size="12" sizeMd="1">
+                  <IonButton
+                    expand="block"
+                    fill="default"
                     style={{ marginTop: '20px' }}
                   >
-                    <IonIcon icon={mapOutline} slot="start" />
-                    Pick on Map
+                    <IonIcon
+                        size="large"
+                        color="primary"
+                        onClick={() => setShowToPicker(true)}
+                        icon={navigateCircleOutline} slot="start" />
                   </IonButton>
                 </IonCol>
               </IonRow>
@@ -575,10 +575,6 @@ const Home: React.FC = () => {
                       onClick={() => setShowSchedulePicker(true)}
                     />
                   </IonItem>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6, gap: 8 }}>
-                    <IonButton size="small" onClick={() => setShowSchedulePicker(true)}>Pick</IonButton>
-                    <IonButton size="small" fill="outline" onClick={() => setFormData(prev => ({ ...prev, scheduledStartTime: null }))}>Clear</IonButton>
-                  </div>
                 </IonCol>
               </IonRow>
 
