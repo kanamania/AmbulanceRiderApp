@@ -29,7 +29,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           try {
             const types = await tripTypeService.getActiveTripTypes();
             setTripTypes(types);
-          } catch (error) {
+          } catch {
+
             console.log('Trip types will be loaded after sync');
             // Not critical - will be loaded when needed
           }
@@ -63,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const types = await tripTypeService.getActiveTripTypes();
       setTripTypes(types);
       console.log('[AuthContext] Trip types loaded from cache:', types.length);
-    } catch (error) {
+    } catch {
       console.log('[AuthContext] Trip types will be loaded when needed');
       // Not critical - components will load from cache when needed
     }

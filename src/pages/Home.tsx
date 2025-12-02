@@ -669,7 +669,7 @@ const Home: React.FC = () => {
                     <IonTextarea 
                       value={formData.notes}
                       onIonInput={e => setFormData(prev => ({ ...prev, notes: e.detail.value || '' }))}
-                      placeholder="Any additional information..."
+                      placeholder="Provide more information about the trip..."
                       rows={3}
                     />
                   </IonItem>
