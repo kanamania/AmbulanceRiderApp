@@ -118,7 +118,18 @@
     "newTripNotification": "New trip request created",
     "tripStatusChangedNotification": "Trip status has been updated",
     "noTrips": "No trips found",
-    "noTripsMessage": "You haven't created any trips yet"
+    "noTripsMessage": "You haven't created any trips yet",
+    "noDrivers": "No drivers found",
+    "noDriversMessage": "You haven't created any drivers yet",
+    "noLocations": "No locations found",
+    "noLocationsMessage": "You haven't created any locations yet",
+    "noTripTypes": "No trip types found",
+    "noTripTypesMessage": "You haven't created any trip types yet",
+    "noVehicles": "No vehicles found",
+    "noVehiclesMessage": "You haven't created any vehicles yet",
+    "noUsers": "No users found",
+    "noUsersMessage": "You haven't created any users yet",
+    "creator": "Requester"
   },
   "user": {
     "users": "Users",

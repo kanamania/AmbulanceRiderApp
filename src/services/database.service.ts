@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { DBTrip, DBTripType, DBUser, DatabaseInitResult } from '../types';
-import { Trip, TripType, LocationPlace, User, Vehicle, VehicleType } from '../types';
+import { DBTrip, DBTripType, DBUser, DBDriver, DatabaseInitResult } from '../types';
+import { Trip, TripType, LocationPlace, User, Vehicle, VehicleType, Driver } from '../types';
 
 // Database row interfaces
 interface TripRow {
@@ -160,6 +160,23 @@ class DatabaseService {
       )
     `);
 
+    // Create drivers table
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS drivers (
+        id TEXT PRIMARY KEY,
+        firstName TEXT,
+        lastName TEXT,
+        email TEXT,
+        phoneNumber TEXT,
+        imagePath TEXT,
+        imageUrl TEXT,
+        isActive INTEGER DEFAULT 1,
+        createdAt TEXT,
+        updatedAt TEXT,
+        UNIQUE(id)
+      )
+    `);
+
     // Create users table
     await this.db.execute(`
       CREATE TABLE IF NOT EXISTS users (
@@ -222,6 +239,8 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_trip_types_active ON trip_types(isActive);
       CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(vehicleTypeId);
       CREATE INDEX IF NOT EXISTS idx_vehicles_name ON vehicles(name);
+      CREATE INDEX IF NOT EXISTS idx_drivers_active ON drivers(isActive);
+      CREATE INDEX IF NOT EXISTS idx_drivers_name ON drivers(lastName);
     `);
   }
 
@@ -418,6 +437,53 @@ class DatabaseService {
     `, [status, new Date().toISOString(), error || null, tripId]);
   }
 
+  // Drivers CRUD operations
+  async upsertDrivers(drivers: Driver[]): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    for (const driver of drivers) {
+      const dbDriver: DBDriver = {
+        id: driver.id,
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        email: driver.email,
+        phoneNumber: driver.phoneNumber,
+        imagePath: driver.imagePath,
+        imageUrl: driver.imageUrl,
+      };
+
+      await this.db.query(`
+        INSERT OR REPLACE INTO drivers 
+        (id, firstName, lastName, email, phoneNumber, imagePath, imageUrl, isActive, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        dbDriver.id,
+        dbDriver.firstName,
+        dbDriver.lastName,
+        dbDriver.email,
+        dbDriver.phoneNumber,
+        dbDriver.imagePath,
+        dbDriver.imageUrl,
+      ]);
+    }
+  }
+
+  async getDrivers(): Promise<Driver[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.query(`SELECT * FROM drivers ORDER BY lastName, firstName`);
+
+    return result.values?.map((row: DBDriver): Driver => ({
+      id: row.id,
+      firstName: row.firstName || undefined,
+      lastName: row.lastName || undefined,
+      email: row.email || undefined,
+      phoneNumber: row.phoneNumber || undefined,
+      imagePath: row.imagePath || undefined,
+      imageUrl: row.imageUrl || undefined,
+    })) || [];
+  }
+
   // Users CRUD operations
   async upsertUser(user: User): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
@@ -526,6 +592,7 @@ class DatabaseService {
     await this.db.execute(`DELETE FROM trips`);
     await this.db.execute(`DELETE FROM trip_types`);
     await this.db.execute(`DELETE FROM locations`);
+    await this.db.execute(`DELETE FROM drivers`);
     await this.db.execute(`DELETE FROM users`);
     await this.db.execute(`DELETE FROM vehicles`);
     await this.db.execute(`DELETE FROM vehicle_types`);

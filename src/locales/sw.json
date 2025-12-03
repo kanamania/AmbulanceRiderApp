@@ -118,7 +118,18 @@
     "newTripNotification": "Ombi jipya la safari limeundwa",
     "tripStatusChangedNotification": "Hali ya safari imesasishwa",
     "noTrips": "Hakuna safari",
-    "noTripsMessage": "Bado hujaunda safari yoyote"
+    "noTripsMessage": "Bado hujaunda safari yoyote",
+    "noDrivers": "Hakuna dereva",
+    "noDriversMessage": "Bado hujaunda dereva yoyote",
+    "noLocations": "Hakuna maeneo",
+    "noLocationsMessage": "Bado hujaunda maeneo yoyote",
+    "noTripTypes": "Hakuna aina za safari",
+    "noTripTypesMessage": "Bado hujaunda aina za safari yoyote",
+    "noVehicles": "Hakuna magari",
+    "noVehiclesMessage": "Bado hujaunda magari yoyote",
+    "noUsers": "Hakuna mtumiaji",
+    "noUsersMessage": "Bado hujaunda mtumiaji yoyote",
+    "creator": "Aliyeanzisha"
   },
   "user": {
     "users": "Watumiaji",

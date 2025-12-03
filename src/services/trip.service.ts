@@ -129,12 +129,20 @@ class TripService {
         API_CONFIG.ENDPOINTS.TRIPS.CREATE,
         data
       );
+
+      let tripDetails = response;
+
+      try {
+        tripDetails = await apiService.get<Trip>(API_CONFIG.ENDPOINTS.TRIPS.GET(response.id));
+      } catch (detailsError) {
+        console.warn('Failed to fetch detailed trip after creation, using initial response.', detailsError);
+      }
       
       // Update cache
-      await cacheService.upsertTrips([response]);
-      console.log('New trip cached:', response.id);
+      await cacheService.upsertTrips([tripDetails]);
+      console.log('New trip cached:', tripDetails.id);
       
-      return response;
+      return tripDetails;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create trip';
       throw new Error(message);

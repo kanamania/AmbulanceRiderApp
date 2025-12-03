@@ -41,8 +41,8 @@ import {
 } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
 import TripMap from '../components/TripMap';
-import { tripService, vehicleService, notificationService } from '../services';
-import { Trip, Vehicle } from '../types';
+import { tripService, vehicleService, notificationService, cacheService } from '../services';
+import { Driver, Trip, Vehicle } from '../types';
 import './Activity.css';
 import {useAuth} from "../contexts/useAuth";
 import {getNormalizedStatus, getStatusStyle} from '../utils/statusStyles';
@@ -57,7 +57,9 @@ const Activity: React.FC = () => {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [showTripModal, setShowTripModal] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>();
+  const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>();
   const [updating, setUpdating] = useState(false);
   const [presentToast] = useIonToast();
   const [presentAlert] = useIonAlert();
@@ -66,6 +68,7 @@ const Activity: React.FC = () => {
   const [estimating, setEstimating] = useState(false);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [vehicleSearchText, setVehicleSearchText] = useState('');
+  const [driverSearchText, setDriverSearchText] = useState('');
 
   const isAdminOrDispatcher = hasRole('Admin', 'Dispatcher');
 
@@ -114,6 +117,16 @@ const Activity: React.FC = () => {
     }
   };
 
+  const loadDrivers = async () => {
+    try {
+      const cachedDrivers = await cacheService.getDrivers();
+      setDrivers(cachedDrivers);
+    } catch (error) {
+      console.error('Error loading drivers:', error);
+      setDrivers([]);
+    }
+  };
+
   const handleRefresh = async (event: CustomEvent) => {
     await loadTrips();
     event.detail.complete();
@@ -128,6 +141,7 @@ const Activity: React.FC = () => {
     console.log(trip);
     setSelectedTrip(trip);
     setSelectedVehicleId(trip.vehicleId);
+    setSelectedDriverId(trip.driverId);
     setShowTripModal(true);
     // Reset estimation state for new trip
     setEstKm(null);
@@ -145,27 +159,35 @@ const Activity: React.FC = () => {
       vehicle.name?.toLowerCase().includes(searchLower)
     );
   }, [vehicles, vehicleSearchText]);
+  const filteredDrivers = useMemo(() => {
+    if (!drivers || !Array.isArray(drivers)) return [];
+    if (!driverSearchText.trim()) return drivers;
+    const searchLower = driverSearchText.toLowerCase();
+    return drivers.filter(driver =>
+      driver.name?.toLowerCase().includes(searchLower)
+    );
+  }, [drivers, driverSearchText]);
 
   const handleAcceptTrip = () => {
     if (!selectedTrip) return;
     // Show vehicle selection modal
     setVehicleSearchText('');
+    setDriverSearchText('');
     setShowVehicleModal(true);
   };
 
-  const handleVehicleSelect = async (vehicleId: number) => {
+  const attemptTripApproval = async (vehicleId: number, driverId: string) => {
     if (!selectedTrip) return;
-    
-    setShowVehicleModal(false);
-    setSelectedVehicleId(vehicleId);
-    
+
     try {
       setUpdating(true);
-      
+      setShowVehicleModal(false);
+
       await tripService.updateTripStatus({
         id: selectedTrip.id,
         status: 1, // Accepted
-        vehicleId: vehicleId,
+        vehicleId,
+        driverId,
       });
       
       // Send notification via backend (will broadcast via SignalR)
@@ -199,17 +221,60 @@ const Activity: React.FC = () => {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    if (!selectedTrip) return;
-    
-    // For accepting trips, validate vehicle selection
-    if (newStatus === 'accepted' && !selectedVehicleId) {
+  const handleVehicleSelect = async (vehicleId: number) => {
+    setSelectedVehicleId(vehicleId);
+    const driverId = selectedDriverId;
+
+    if (!driverId) {
       presentToast({
-        message: 'Please select a vehicle before accepting the trip',
+        message: 'Please select a driver before approving the trip',
         duration: 3000,
         color: 'warning'
       });
       return;
+    }
+
+    await attemptTripApproval(vehicleId, driverId);
+  };
+
+  const handleDriverSelect = async (driverId: string) => {
+    setSelectedDriverId(driverId);
+    const vehicleId = selectedVehicleId;
+
+    if (vehicleId === undefined) {
+      presentToast({
+        message: 'Please select a vehicle before approving the trip',
+        duration: 3000,
+        color: 'warning'
+      });
+      return;
+    }
+
+    await attemptTripApproval(vehicleId, driverId);
+  };
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!selectedTrip) return;
+    
+    // For accepting trips, validate vehicle selection
+    if (newStatus === 'accepted') {
+      if (!selectedVehicleId) {
+        presentToast({
+          message: 'Please select a vehicle before accepting the trip',
+          duration: 3000,
+          color: 'warning'
+        });
+        return;
+      }
+
+      if (!selectedDriverId) {
+        presentToast({
+          message: 'Please select a driver before accepting the trip',
+          duration: 3000,
+          color: 'warning'
+        });
+        return;
+      }
     }
     
     presentAlert({
@@ -247,6 +312,7 @@ const Activity: React.FC = () => {
                 id: selectedTrip.id,
                 status: statusMap[newStatus],
                 vehicleId: selectedVehicleId,
+                driverId: selectedDriverId,
                 notes: data?.reason || undefined
               });
               
@@ -442,6 +508,7 @@ const Activity: React.FC = () => {
     loadTrips();
     if (isAdminOrDispatcher) {
       loadVehicles();
+      loadDrivers();
     }
   }, [isAdminOrDispatcher, loadTrips]);
 
@@ -621,7 +688,7 @@ const Activity: React.FC = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexDirection: 'column' }}>
                       <IonCardTitle>Trip #{selectedTrip.id} - {selectedTrip.name}</IonCardTitle>
                       <small>{getStatusBadge(selectedTrip.status)}</small>
-                      <p>Requestor: {selectedTrip.creator?.name} - {selectedTrip.creator?.company.name}</p>
+                      <p>Requestor: {selectedTrip.creator?.name} - {selectedTrip.creator?.company?.name}</p>
                       <p>{formatDate(selectedTrip.createdAt)}</p>
                     </div>
                   </IonCardHeader>
@@ -690,6 +757,7 @@ const Activity: React.FC = () => {
 
                       {/* Vehicle Selection for Admin/Dispatcher */}
                       {isAdminOrDispatcher && selectedTrip.status === 'pending' && (
+                          <>
                         <IonItem>
                           <IonLabel position="stacked">{t('trip.selectVehicle')} *</IonLabel>
                           <IonSelect
@@ -705,6 +773,22 @@ const Activity: React.FC = () => {
                             ))}
                           </IonSelect>
                         </IonItem>
+                        <IonItem>
+                          <IonLabel position="stacked">{t('trip.selectDriver')} *</IonLabel>
+                          <IonSelect
+                            value={selectedDriverId}
+                            onIonChange={(e) => setSelectedDriverId(e.detail.value)}
+                            placeholder={t('trip.selectDriver')}
+                            interface="action-sheet"
+                          >
+                            {drivers.map((driver) => (
+                              <IonSelectOption key={driver.id} value={driver.id}>
+                                {driver.name}
+                              </IonSelectOption>
+                            ))}
+                          </IonSelect>
+                        </IonItem>
+                          </>
                       )}
 
                       {/* Display assigned vehicle */}
@@ -752,13 +836,13 @@ const Activity: React.FC = () => {
                         disabled={updating}
                       >
                         <IonIcon icon={checkmarkCircle} slot="start" />
-                        Accept Trip
+                        Approve Trip
                       </IonButton>
                       <IonButton 
                         expand="block" 
                         color="danger"
                         fill="outline"
-                        onClick={() => handleStatusUpdate('cancelled')}
+                        onClick={() => handleStatusUpdate('rejected')}
                         disabled={updating}
                       >
                         <IonIcon icon={closeCircle} slot="start" />
@@ -814,20 +898,12 @@ const Activity: React.FC = () => {
         <IonModal isOpen={showVehicleModal} onDidDismiss={() => setShowVehicleModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Select Vehicle</IonTitle>
+              <IonTitle>Select Vehicle and Driver</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowVehicleModal(false)}>
                   <IonIcon icon={close} />
                 </IonButton>
               </IonButtons>
-            </IonToolbar>
-            <IonToolbar>
-              <IonSearchbar
-                value={vehicleSearchText}
-                onIonInput={(e) => setVehicleSearchText(e.detail.value || '')}
-                placeholder="Search by name or plate number"
-                debounce={300}
-              />
             </IonToolbar>
           </IonHeader>
           <IonContent>
@@ -844,22 +920,61 @@ const Activity: React.FC = () => {
               </div>
             )}
             {!updating && filteredVehicles.length > 0 && (
-              <IonList>
-                {filteredVehicles.map((vehicle) => (
-                  <IonItem 
-                    key={vehicle.id} 
-                    button 
-                    onClick={() => handleVehicleSelect(vehicle.id)}
-                    detail={true}
-                  >
-                    <IonIcon icon={car} slot="start" color="primary" />
-                    <IonLabel>
-                      <h2>{vehicle.name}</h2>
-                      <p>Plate Number: {vehicle.plateNumber}</p>
-                    </IonLabel>
-                  </IonItem>
-                ))}
-              </IonList>
+              <div style={{display: 'flex', justifyContent: 'space-between'}}>
+              <div style={{width: '50%'}}>
+                <IonToolbar>
+                  <IonSearchbar
+                    value={vehicleSearchText}
+                    onIonInput={(e) => setVehicleSearchText(e.detail.value || '')}
+                    placeholder="Search vehicle by name or plate number"
+                    debounce={300}
+                  />
+                </IonToolbar>
+                <IonList>
+                  {filteredVehicles.map((vehicle) => (
+                      <IonItem
+                          key={vehicle.id}
+                          button
+                          onClick={() => handleVehicleSelect(vehicle.id)}
+                          detail={true}
+                          className={`transition-colors duration-150 rounded-lg ${selectedVehicleId === vehicle.id ? 'border border-primary bg-primary/10' : 'hover:bg-muted/40'}`}
+                      >
+                        <IonIcon icon={car} slot="start" color="primary" />
+                        <IonLabel>
+                          <h2>{vehicle.name}</h2>
+                          <p>Plate Number: {vehicle.plateNumber}</p>
+                        </IonLabel>
+                      </IonItem>
+                  ))}
+                </IonList>
+              </div>
+              <div style={{width: '50%'}}>
+                <IonToolbar>
+                  <IonSearchbar
+                    value={driverSearchText}
+                    onIonInput={(e) => setDriverSearchText(e.detail.value || '')}
+                    placeholder="Search driver by name"
+                    debounce={300}
+                  />
+                </IonToolbar>
+                <IonList>
+                  {filteredDrivers.map((driver) => (
+                      <IonItem
+                          key={driver.id}
+                          button
+                          onClick={() => handleDriverSelect(driver.id)}
+                          detail={true}
+                          className={`transition-colors duration-150 rounded-lg ${selectedDriverId === driver.id ? 'border border-primary bg-primary/10' : 'hover:bg-muted/40'}`}
+                      >
+                        <IonIcon icon={person} slot="start" color="primary" />
+                        <IonLabel>
+                          <h2>{driver.name}</h2>
+                        </IonLabel>
+                      </IonItem>
+                  ))}
+                </IonList>
+              </div>
+              </div>
             )}
           </IonContent>
         </IonModal>

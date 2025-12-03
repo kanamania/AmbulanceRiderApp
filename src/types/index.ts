@@ -4,6 +4,18 @@ export * from './telemetry.types';
 export * from './vehicle.types';
 export * from './database.types';
 
+// Driver types
+export interface Driver {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  imagePath?: string;
+  imageUrl?: string;
+}
+
 // Location types
 export interface Company {
   name: string;
@@ -205,12 +217,7 @@ export interface Trip {
     name: string;
   };
   driverId?: string;
-  driver?: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  };
+  driver?: Driver;
   createdById?: string;
   creator?: {
     company: Company;
@@ -286,6 +293,7 @@ export interface UpdateTripStatusRequest {
   id: number;
   status: number; // 0=Pending, 1=Approved, 2=Rejected, 3=InProgress, 4=Completed, 5=Cancelled
   vehicleId?: number;
+  driverId?: string;
   notes?: string;
   rejectionReason?: string;
   forceComplete?: boolean;

@@ -7,6 +7,7 @@ export interface DataHashResponse {
   tripTypesHash: string;
   tripsHash: string;
   locationsHash: string;
+  driversHash: string;
   othersHash?: string;
 }
 
@@ -17,6 +18,7 @@ export interface StoredDataHashes {
   tripTypesHash: string;
   tripsHash: string;
   locationsHash: string;
+  driversHash: string;
   othersHash?: string;
   lastSync: string;
 }
@@ -111,3 +113,14 @@ export interface DatabaseInitResult {
   success: boolean;
   message?: string;
 }
+
+export interface DBDriver {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  imagePath?: string;
+  imageUrl?: string;
+}
+

@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import databaseService from './database.service';
 import indexedDBService from './indexeddb.service';
-import { Trip, TripType, LocationPlace, Vehicle, VehicleType } from '../types';
+import { Trip, TripType, LocationPlace, Vehicle, VehicleType, Driver } from '../types';
 
 /**
  * Unified Cache Service
@@ -101,6 +101,64 @@ class CacheService {
       }
     } catch (error) {
       console.error('Error clearing trips from cache:', error);
+    }
+  }
+
+  // ==================== DRIVERS ====================
+
+  async getDrivers(): Promise<Driver[]> {
+    await this.ensureInitialized();
+    try {
+      if (this.isNative) {
+        return await databaseService.getDrivers();
+      } else {
+        return await indexedDBService.getDrivers();
+      }
+    } catch (error) {
+      console.error('Error getting drivers from cache:', error);
+      return [];
+    }
+  }
+
+  async getDriverById(id: string): Promise<Driver | null> {
+    await this.ensureInitialized();
+    try {
+      if (this.isNative) {
+        const drivers = await databaseService.getDrivers();
+        return drivers.find(d => d.id === id) || null;
+      } else {
+        return await indexedDBService.getDriverById(id);
+      }
+    } catch (error) {
+      console.error('Error getting driver by ID from cache:', error);
+      return null;
+    }
+  }
+
+  async upsertDrivers(drivers: Driver[]): Promise<void> {
+    await this.ensureInitialized();
+    try {
+      if (this.isNative) {
+        await databaseService.upsertDrivers(drivers);
+      } else {
+        await indexedDBService.upsertDrivers(drivers);
+      }
+    } catch (error) {
+      console.error('Error upserting drivers to cache:', error);
+    }
+  }
+
+  async clearDrivers(): Promise<void> {
+    await this.ensureInitialized();
+    try {
+      if (this.isNative) {
+        const db = databaseService.getConnection();
+        if (db) await db.execute('DELETE FROM drivers');
+      } else {
+        await indexedDBService.clearDrivers();
+      }
+    } catch (error) {
+      console.error('Error clearing drivers from cache:', error);
     }
   }
 
@@ -400,7 +458,7 @@ class CacheService {
   /**
    * Check if cache has data for a specific resource
    */
-  async hasData(resource: 'trips' | 'tripTypes' | 'locations' | 'vehicles' | 'vehicleTypes'): Promise<boolean> {
+  async hasData(resource: 'trips' | 'tripTypes' | 'locations' | 'vehicles' | 'vehicleTypes' | 'drivers'): Promise<boolean> {
     await this.ensureInitialized();
     try {
       let data: unknown[] = [];
@@ -419,6 +477,9 @@ class CacheService {
           break;
         case 'vehicleTypes':
           data = await this.getVehicleTypes();
+          break;
+        case 'drivers':
+          data = await this.getDrivers();
           break;
       }
       return data.length > 0;

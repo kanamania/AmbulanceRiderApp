@@ -1,12 +1,13 @@
 import apiService from './api.service';
 import cacheService from './cache.service';
 import { API_CONFIG } from '../config/api.config';
-import {LocationPlace, Trip, TripType, Vehicle} from "../types";
+import {Driver, LocationPlace, Trip, TripType, Vehicle} from "../types";
 
 /**
  * Data Hash Response from /api/auth/data-hashes (Backend format)
  */
 export interface BackendHashResponse {
+  driversHash?: string;
   userHash?: string;
   profileHash?: string;
   tripsHash?: string;
@@ -19,6 +20,7 @@ export interface BackendHashResponse {
  * Normalized Data Hash Response (Frontend format)
  */
 export interface DataHashResponse {
+  drivers: string;
   trips: string;
   locations: string;
   tripTypes: string;
@@ -31,6 +33,7 @@ export interface DataHashResponse {
 export interface FullDataResponse {
   hashes: DataHashResponse;
   data: {
+    drivers?: Driver[];
     trips?: Trip[];
     locations?: LocationPlace[];
     tripTypes?: TripType[];
@@ -42,6 +45,7 @@ export interface FullDataResponse {
  * Stored hashes in local cache
  */
 interface StoredHashes {
+  drivers?: string;
   trips?: string;
   locations?: string;
   tripTypes?: string;
@@ -73,14 +77,16 @@ class DataHashService {
         trips: backendResponse.tripsHash || '',
         locations: backendResponse.locationsHash || '',
         tripTypes: backendResponse.tripTypesHash || '',
-        vehicles: backendResponse.vehiclesHash || ''
+        vehicles: backendResponse.vehiclesHash || '',
+        drivers: backendResponse.driversHash || ''
       };
       
       console.log('[Hash Service] Server hashes received:', {
         trips: response.trips?.substring(0, 8) + '...',
         locations: response.locations?.substring(0, 8) + '...',
         tripTypes: response.tripTypes?.substring(0, 8) + '...',
-        vehicles: response.vehicles?.substring(0, 8) + '...'
+        vehicles: response.vehicles?.substring(0, 8) + '...',
+        drivers: response.drivers?.substring(0, 8) + '...'
       });
       
       return response;
@@ -101,7 +107,6 @@ class DataHashService {
       
       // If all 4 entities or no entities specified, don't add query params
       // Backend returns all data when no params are provided
-      const allEntities = ['trips', 'locations', 'tripTypes', 'vehicles'];
       const fetchingAll = !entities || entities.length === 0 || entities.length === 4;
       
       if (fetchingAll) {
@@ -113,6 +118,7 @@ class DataHashService {
         if (entities.includes('locations')) params.append('includeLocations', 'true');
         if (entities.includes('tripTypes')) params.append('includeTripTypes', 'true');
         if (entities.includes('vehicles')) params.append('includeVehicles', 'true');
+        if (entities.includes('drivers')) params.append('includeDrivers', 'true');
         url = `${url}?${params.toString()}`;
         console.log('[Hash Service] Fetching specific entities:', entities);
       }
@@ -124,7 +130,7 @@ class DataHashService {
       // Transform to expected nested structure: {hashes: {...}, data: {...}}
       let response: FullDataResponse;
       
-      if (backendResponse.hashes && backendResponse.data) {
+      if (backendResponse.data) {
         // Already in expected format
         response = backendResponse as FullDataResponse;
       } else if (backendResponse.trips || backendResponse.locations || backendResponse.tripTypes || backendResponse.vehicles) {
@@ -135,13 +141,15 @@ class DataHashService {
             trips: '',
             locations: '',
             tripTypes: '',
-            vehicles: ''
+            vehicles: '',
+            drivers: ''
           },
           data: {
             trips: backendResponse.trips || [],
             locations: backendResponse.locations || [],
             tripTypes: backendResponse.tripTypes || [],
-            vehicles: backendResponse.vehicles || []
+            vehicles: backendResponse.vehicles || [],
+            drivers: backendResponse.drivers || []
           }
         };
       } else {
@@ -154,6 +162,7 @@ class DataHashService {
       if (response.data.locations) dataSummary.locations = response.data.locations.length;
       if (response.data.tripTypes) dataSummary.tripTypes = response.data.tripTypes.length;
       if (response.data.vehicles) dataSummary.vehicles = response.data.vehicles.length;
+      if (response.data.drivers) dataSummary.drivers = response.data.drivers.length;
       console.log('[Hash Service] Bulk data received:', dataSummary);
       
       return response;
@@ -177,6 +186,7 @@ class DataHashService {
           locations: hashes.locations?.substring(0, 8) + '...',
           tripTypes: hashes.tripTypes?.substring(0, 8) + '...',
           vehicles: hashes.vehicles?.substring(0, 8) + '...',
+          drivers: hashes.drivers?.substring(0, 8) + '...',
           lastSync: hashes.lastSync
         });
         return hashes;
@@ -191,6 +201,7 @@ class DataHashService {
           locations: localHashes.locations?.substring(0, 8) + '...',
           tripTypes: localHashes.tripTypes?.substring(0, 8) + '...',
           vehicles: localHashes.vehicles?.substring(0, 8) + '...',
+          drivers: localHashes.drivers?.substring(0, 8) + '...',
           lastSync: localHashes.lastSync
         });
         return localHashes;
@@ -264,7 +275,8 @@ class DataHashService {
       { entity: 'trips', stored: storedHashes.trips, server: serverHashes.trips },
       { entity: 'locations', stored: storedHashes.locations, server: serverHashes.locations },
       { entity: 'tripTypes', stored: storedHashes.tripTypes, server: serverHashes.tripTypes },
-      { entity: 'vehicles', stored: storedHashes.vehicles, server: serverHashes.vehicles }
+      { entity: 'vehicles', stored: storedHashes.vehicles, server: serverHashes.vehicles },
+      { entity: 'drivers', stored: storedHashes.drivers, server: serverHashes.drivers },
     ];
 
     comparisons.forEach(({ entity, stored, server }) => {
@@ -332,6 +344,16 @@ class DataHashService {
             console.log(`[Hash Service] Synced ${data.vehicles.length} vehicles (bulk)`);
           } else {
             console.log('[Hash Service] No vehicles in bulk data');
+          }
+          break;
+        }
+
+        case 'drivers': {
+          if (data.drivers && data.drivers.length > 0) {
+            await cacheService.upsertDrivers(data.drivers);
+            console.log(`[Hash Service] Synced ${data.drivers.length} drivers (bulk)`);
+          } else {
+            console.log('[Hash Service] No drivers in bulk data');
           }
           break;
         }
@@ -433,7 +455,8 @@ class DataHashService {
         trips: serverHashes.trips?.substring(0, 8) + '...',
         locations: serverHashes.locations?.substring(0, 8) + '...',
         tripTypes: serverHashes.tripTypes?.substring(0, 8) + '...',
-        vehicles: serverHashes.vehicles?.substring(0, 8) + '...'
+        vehicles: serverHashes.vehicles?.substring(0, 8) + '...',
+        drivers: serverHashes.drivers?.substring(0, 8) + '...'
       });
       
       // Compare with stored hashes

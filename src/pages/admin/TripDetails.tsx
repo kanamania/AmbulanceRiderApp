@@ -38,21 +38,25 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import {AdminLayout} from '../../layouts/AdminLayout';
 import TripMap from '../../components/TripMap';
-import { Trip, TripStatusLog, Vehicle } from '../../types';
-import { tripService, vehicleService, notificationService } from '../../services';
+import { Driver, Trip, TripStatusLog, Vehicle } from '../../types';
+import { tripService, vehicleService, notificationService, cacheService } from '../../services';
 import './AdminPages.css';
+import {useTranslation} from "react-i18next";
 
 const TripDetails: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [statusLogs, setStatusLogs] = useState<TripStatusLog[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>();
+  const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const loadTripDetails = useCallback(async () => {
     if (!id) {
@@ -70,6 +74,7 @@ const TripDetails: React.FC = () => {
       const tripData = await tripService.getTripById(parseInt(id!));
       setTrip(tripData);
       setSelectedVehicleId(tripData.vehicleId);
+      setSelectedDriverId(tripData.driverId);
       
       // Load available vehicles
       try {
@@ -77,6 +82,15 @@ const TripDetails: React.FC = () => {
         setVehicles(vehiclesData.data);
       } catch (error) {
         console.error('Error loading vehicles:', error);
+      }
+
+      // Load available drivers from cache
+      try {
+        const cachedDrivers = await cacheService.getDrivers();
+        setDrivers(cachedDrivers);
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        setDrivers([]);
       }
       
       // Load status logs
@@ -103,13 +117,24 @@ const TripDetails: React.FC = () => {
     if (!trip) return;
     
     // For accepting trips, validate vehicle selection
-    if (newStatus === 'accepted' && !selectedVehicleId) {
-      presentToast({
-        message: 'Please select a vehicle before accepting the trip',
-        duration: 3000,
-        color: 'warning'
-      });
-      return;
+    if (newStatus === 'accepted') {
+      if (!selectedVehicleId) {
+        presentToast({
+          message: 'Please select a vehicle before accepting the trip',
+          duration: 3000,
+          color: 'warning'
+        });
+        return;
+      }
+
+      if (!selectedDriverId) {
+        presentToast({
+          message: 'Please select a driver before accepting the trip',
+          duration: 3000,
+          color: 'warning'
+        });
+        return;
+      }
     }
     
     presentAlert({
@@ -147,6 +172,7 @@ const TripDetails: React.FC = () => {
                 id: trip.id,
                 status: statusMap[newStatus],
                 vehicleId: selectedVehicleId,
+                driverId: selectedDriverId,
                 notes: data?.reason || undefined
               });
               
@@ -391,6 +417,9 @@ const TripDetails: React.FC = () => {
           <div>
             <h1>Trip #{trip.id}</h1>
             <p>View and manage trip details</p>
+            {trip.creator && (
+              <p style={{ marginTop: 4 }}>Requested by: {trip.creator.name}{trip.creator.company?.name ? ` • ${trip.creator.company.name}` : ''}</p>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             {getStatusBadge(trip.status)}
@@ -465,6 +494,17 @@ const TripDetails: React.FC = () => {
                         <IonLabel>
                           <h3>Description</h3>
                           <p>{trip.description}</p>
+                        </IonLabel>
+                      </IonItem>
+                    )}
+
+                    {trip.creator && (
+                      <IonItem>
+                        <IonIcon icon={person} slot="start" color="primary" />
+                        <IonLabel>
+                          <h3>Requested By</h3>
+                          <p>{trip.creator.name}</p>
+                          {trip.creator.company?.name && <small style={{ color: '#555' }}>{trip.creator.company.name}</small>}
                         </IonLabel>
                       </IonItem>
                     )}
@@ -598,12 +638,13 @@ const TripDetails: React.FC = () => {
                     
                     {/* Vehicle Selection */}
                     {trip.status === 'pending' && (
-                      <IonItem>
+                        <>
+                          <IonItem>
                         <IonLabel position="stacked">Select Vehicle *</IonLabel>
                         <IonSelect
                           value={selectedVehicleId}
                           onIonChange={(e) => setSelectedVehicleId(e.detail.value)}
-                          placeholder="Choose a vehicle"
+                          placeholder={t('trip.selectVehicle')}
                           interface="action-sheet"
                         >
                           {vehicles.map((vehicle) => (
@@ -613,6 +654,24 @@ const TripDetails: React.FC = () => {
                           ))}
                         </IonSelect>
                       </IonItem>
+
+                      <IonItem>
+                        <IonLabel position="stacked">Select Driver *</IonLabel>
+                        <IonSelect
+                          value={selectedDriverId}
+                          onIonChange={(e) => setSelectedDriverId(e.detail.value)}
+                          placeholder="Select driver"
+                          interface="action-sheet"
+                        >
+                          {drivers.map((driver) => (
+                            <IonSelectOption key={driver.id} value={driver.id}>
+                              {driver.firstName} {driver.lastName}
+                              {driver.phoneNumber ? ` • ${driver.phoneNumber}` : ''}
+                            </IonSelectOption>
+                          ))}
+                        </IonSelect>
+                      </IonItem>
+                </>
                     )}
                     
                     {/* Display assigned vehicle */}

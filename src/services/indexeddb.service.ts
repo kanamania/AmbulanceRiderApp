@@ -1,4 +1,4 @@
-import { Trip, TripType, LocationPlace, Vehicle, VehicleType } from '../types';
+import {Trip, TripType, LocationPlace, Vehicle, VehicleType, Driver} from '../types';
 
 /**
  * IndexedDB Service for Web Platform Caching
@@ -30,7 +30,7 @@ class IndexedDBService {
           console.log('IndexedDB already initialized, reusing connection');
           return Promise.resolve();
         }
-      } catch (error) {
+      } catch {
         // Connection is closed or invalid, continue to reopen
         console.log('IndexedDB connection invalid, reinitializing...');
         this.db = null;
@@ -412,6 +412,22 @@ class IndexedDBService {
       this.db.close();
       this.db = null;
     }
+  }
+
+    async getDrivers() {
+      return this.getAll<Driver>('drivers');
+    }
+
+  async getDriverById(id: number) {
+    return this.getById<Driver>('drivers', id);
+  }
+
+  async upsertDrivers(drivers: Driver[]): Promise<void> {
+    return this.upsertMany('drivers', drivers);
+  }
+
+  async clearDrivers() {
+    return this.clearStore('drivers');
   }
 }
 
