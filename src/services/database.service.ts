@@ -69,7 +69,7 @@ class DatabaseService {
         this.DB_NAME,
         this.DB_ENCRYPTED,
         this.DB_MODE,
-        1,
+        2,
         false
       );
 

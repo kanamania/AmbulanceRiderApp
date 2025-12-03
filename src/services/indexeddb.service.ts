@@ -8,7 +8,7 @@ class IndexedDBService {
   private static instance: IndexedDBService;
   private db: IDBDatabase | null = null;
   private readonly DB_NAME = 'ambulance_rider_db';
-  private readonly DB_VERSION = 2;
+  private readonly DB_VERSION = 3;
   private initPromise: Promise<void> | null = null;
 
   /**
@@ -131,6 +131,13 @@ class IndexedDBService {
             }
           }
         }
+
+        // Migration from version 2 to version 3
+        if (oldVersion < 3) {
+          if (!db.objectStoreNames.contains('drivers')) {
+            db.createObjectStore('drivers', { keyPath: 'id' });
+          }
+        }
       };
     });
 
@@ -177,7 +184,7 @@ class IndexedDBService {
   /**
    * Generic method to get a single item by ID
    */
-  private async getById<T>(storeName: string, id: number): Promise<T | null> {
+  private async getById<T>(storeName: string, id: number | string): Promise<T | null> {
     if (!this.db) throw new Error('IndexedDB not initialized');
 
     return new Promise((resolve, reject) => {
@@ -193,7 +200,7 @@ class IndexedDBService {
   /**
    * Generic method to upsert items (insert or update)
    */
-  private async upsertMany<T extends { id: number }>(storeName: string, items: T[]): Promise<void> {
+  private async upsertMany<T extends { id: number | string }>(storeName: string, items: T[]): Promise<void> {
     // Ensure database is initialized before operation
     await this.initialize();
     
@@ -418,7 +425,7 @@ class IndexedDBService {
       return this.getAll<Driver>('drivers');
     }
 
-  async getDriverById(id: number) {
+  async getDriverById(id: number | string) {
     return this.getById<Driver>('drivers', id);
   }
 

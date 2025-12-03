@@ -42,6 +42,7 @@ import { Driver, Trip, TripStatusLog, Vehicle } from '../../types';
 import { tripService, vehicleService, notificationService, cacheService } from '../../services';
 import './AdminPages.css';
 import {useTranslation} from "react-i18next";
+import { useAuth } from '../../contexts/useAuth';
 
 const TripDetails: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
@@ -57,6 +58,8 @@ const TripDetails: React.FC = () => {
   const [presentToast] = useIonToast();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { hasRole } = useAuth();
+  const isDriver = hasRole('Driver');
 
   const loadTripDetails = useCallback(async () => {
     if (!id) {
@@ -68,7 +71,7 @@ const TripDetails: React.FC = () => {
       navigate(-1);
       return;
     }
-    
+
     try {
       setLoading(true);
       const tripData = await tripService.getTripById(parseInt(id!));
@@ -115,6 +118,15 @@ const TripDetails: React.FC = () => {
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!trip) return;
+
+    if (newStatus === 'in_progress' && !isDriver) {
+      presentToast({
+        message: t('trip.driverOnlyStart'),
+        duration: 3000,
+        color: 'warning'
+      });
+      return;
+    }
     
     // For accepting trips, validate vehicle selection
     if (newStatus === 'accepted') {
@@ -713,7 +725,7 @@ const TripDetails: React.FC = () => {
                       </>
                     )}
                     
-                    {trip.status === 'accepted' && (
+                    {trip.status === 'accepted' && isDriver && (
                       <IonButton 
                         expand="block" 
                         color="primary"

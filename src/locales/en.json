@@ -129,7 +129,8 @@
     "noVehiclesMessage": "You haven't created any vehicles yet",
     "noUsers": "No users found",
     "noUsersMessage": "You haven't created any users yet",
-    "creator": "Requester"
+    "creator": "Requester",
+    "driverOnlyStart": "Only drivers can start a trip"
   },
   "user": {
     "users": "Users",

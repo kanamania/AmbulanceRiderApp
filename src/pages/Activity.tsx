@@ -71,6 +71,7 @@ const Activity: React.FC = () => {
   const [driverSearchText, setDriverSearchText] = useState('');
 
   const isAdminOrDispatcher = hasRole('Admin', 'Dispatcher');
+  const isDriver = hasRole('Driver');
 
   const normalizeStatus = useCallback((status: string) => getNormalizedStatus(status), []);
 
@@ -275,6 +276,15 @@ const Activity: React.FC = () => {
         });
         return;
       }
+    }
+    
+    if (newStatus === 'in_progress' && !isDriver) {
+      presentToast({
+        message: t('trip.driverOnlyStart'),
+        duration: 3000,
+        color: 'warning'
+      });
+      return;
     }
     
     presentAlert({
@@ -851,7 +861,7 @@ const Activity: React.FC = () => {
                     </>
                   )}
                   
-                  {normalizeStatus(selectedTrip.status) === 'approved' && (
+                  {normalizeStatus(selectedTrip.status) === 'approved' && isDriver && (
                     <IonButton 
                       expand="block" 
                       color="primary"
