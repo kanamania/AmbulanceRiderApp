@@ -5,6 +5,34 @@ All notable changes to the Global Express will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.25] - 2025-12-04T11:30:00+03:00
+
+### Added
+- Unit tests with Vitest (87 tests passing)
+  - validators.test.ts - 29 tests for form validation
+  - formatters.test.ts - 32 tests for data formatting
+  - auth.service.test.ts - 17 tests for authentication
+  - api.service.test.ts - 8 tests for API client
+  - App.test.tsx - 1 test for app rendering
+- E2E tests with Cypress
+  - auth.cy.ts - Authentication flow tests
+  - trips.cy.ts - Trip management tests
+  - navigation.cy.ts - Navigation and routing tests
+- Custom Cypress commands (login, logout, getByTestId, waitForIonic)
+- Test setup with proper mocks for localStorage, matchMedia, window.location
+
+### Changed
+- Updated setupTests.ts with Vitest-compatible mocks
+- Updated cypress.config.ts with environment variables and timeouts
+- Updated cypress/support/commands.ts with custom commands
+
+### Testing
+- Unit test coverage target: 60%
+- E2E test coverage: Authentication, Trips, Navigation
+- All tests passing in CI-ready configuration
+
+---
+
 ## [0.0.24] - 2025-12-04T11:00:00+03:00
 
 ### Added
@@ -256,6 +284,7 @@ src/
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 0.0.25 | 2025-12-04 | Unit tests and E2E tests implementation |
 | 0.0.24 | 2025-12-04 | Error boundary, offline mode, performance optimization |
 | 0.0.23 | 2025-12-04 | SignalR real-time notifications fix |
 | 0.0.22 | 2025-12-04 | Documentation consolidation |

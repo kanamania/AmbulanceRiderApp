@@ -1,14 +1,40 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
-// Mock matchmedia
-window.matchMedia = window.matchMedia || function() {
-  return {
-      matches: false,
-      addListener: function() {},
-      removeListener: function() {}
-  };
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn(),
 };
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+Object.defineProperty(window, 'location', {
+  writable: true,
+  value: {
+    href: '',
+    pathname: '/',
+    search: '',
+    hash: '',
+    origin: 'http://localhost:5173',
+    assign: vi.fn(),
+    replace: vi.fn(),
+    reload: vi.fn(),
+  },
+});
