@@ -1,7 +1,7 @@
 # Planning & Implementation Roadmap
 
-**Last Updated:** 2025-12-04T09:30:00+03:00  
-**Version:** 0.0.22 (1.1.1)
+**Last Updated:** 2025-12-04T10:05:00+03:00  
+**Version:** 0.0.23
 
 ---
 
@@ -27,7 +27,7 @@ Global Express Mobile App is a cross-platform mobile/web application built with 
 | **Multi-language** | ✅ Complete | i18n support with English base |
 | **Dark Mode** | ✅ Complete | System-based theme switching |
 | **Data Caching** | ✅ Complete | IndexedDB caching, hash-based sync |
-| **Push Notifications** | ✅ Partial | Firebase configured, SignalR hubs ready |
+| **Push Notifications** | ✅ Complete | SignalR hubs connected, role-based groups, trip subscriptions |
 
 ### Pending Features 🔄
 
@@ -36,7 +36,6 @@ Global Express Mobile App is a cross-platform mobile/web application built with 
 | Unit Tests | High | 1-2 weeks |
 | E2E Tests with Cypress | High | 1 week |
 | Offline Mode | Medium | 2 weeks |
-| Real-time Updates (SignalR) | Medium | 1 week |
 | Payment Integration | Low | 2 weeks |
 | Advanced Analytics | Low | 1 week |
 
@@ -173,7 +172,7 @@ Per project rules, documentation should be consolidated to 6 core files only. Th
 - [ ] Performance optimization
 
 ### Phase 4: Features (Week 4+)
-- [ ] Complete SignalR real-time updates
+- [x] Complete SignalR real-time updates
 - [ ] Add advanced analytics dashboard
 - [ ] Payment integration
 - [ ] Native mobile app improvements
@@ -218,6 +217,7 @@ Per project rules, documentation should be consolidated to 6 core files only. Th
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.0.23 | 2025-12-04 | SignalR real-time notifications fix |
 | 0.0.22 | 2025-12-04 | Documentation consolidation |
 | 0.0.21 | 2025-12-03 | Driver trip start restriction |
 | 0.0.20 | 2025-12-02 | Data hash sync improvements |

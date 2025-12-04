@@ -5,6 +5,20 @@ All notable changes to the Global Express will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.23] - 2025-12-04T10:05:00+03:00
+
+### Fixed
+- SignalR service now joins role-based groups (admins, dispatchers, drivers)
+- Added listeners for all backend event naming conventions
+- Added `subscribeToTrip` and `unsubscribeFromTrip` methods
+
+### Tested
+- Verified SignalR hubs accessible via WebSocket/SSE/LongPolling
+- Verified trip-created notifications broadcast correctly
+- Verified trip-status-changed notifications broadcast correctly
+
+---
+
 ## [0.0.22] - 2025-12-04T09:30:00+03:00
 
 ### Added
@@ -217,6 +231,7 @@ src/
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 0.0.23 | 2025-12-04 | SignalR real-time notifications fix |
 | 0.0.22 | 2025-12-04 | Documentation consolidation |
 | 0.0.21 | 2025-12-03 | Driver trip start restriction |
 | 0.0.20 | 2025-10-26 | Password reset feature |

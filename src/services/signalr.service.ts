@@ -95,6 +95,41 @@ class SignalRService {
 
     await this.notificationConnection.start();
     console.log('Connected to notification hub');
+    
+    // Join role-based groups for receiving broadcasts
+    await this.joinRoleGroups();
+  }
+
+  /**
+   * Join role-based groups on the notification hub
+   */
+  private async joinRoleGroups(): Promise<void> {
+    if (!this.notificationConnection || this.notificationConnection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    try {
+      const userData = authService.getUserData();
+      if (!userData?.roles) return;
+
+      const roles = userData.roles.map((r: string) => r.toLowerCase());
+      
+      // Join groups based on user roles
+      if (roles.includes('admin')) {
+        await this.notificationConnection.invoke('JoinGroup', 'admins');
+        console.log('Joined admins group');
+      }
+      if (roles.includes('dispatcher')) {
+        await this.notificationConnection.invoke('JoinGroup', 'dispatchers');
+        console.log('Joined dispatchers group');
+      }
+      if (roles.includes('driver')) {
+        await this.notificationConnection.invoke('JoinGroup', 'drivers');
+        console.log('Joined drivers group');
+      }
+    } catch (error) {
+      console.error('Error joining role groups:', error);
+    }
   }
 
   /**
@@ -109,10 +144,9 @@ class SignalRService {
       .configureLogging(signalR.LogLevel.Information)
       .build();
 
-    // Listen for trip events
+    // Listen for trip events - both frontend naming and backend naming conventions
     this.tripConnection.on('TripCreated', (trip: unknown) => {
       console.log('Trip created:', trip);
-      
       notificationService.addNotification({
         title: 'New Trip',
         body: 'A new trip has been created',
@@ -120,22 +154,55 @@ class SignalRService {
       });
     });
 
+    // Backend sends TripStatusChanged
     this.tripConnection.on('TripStatusChanged', (data: {
-      tripId: number;
-      status: string;
+      tripId?: number;
+      TripId?: number;
+      status?: string;
+      NewStatus?: string;
+      OldStatus?: string;
       message?: string;
+      Message?: string;
     }) => {
+      const tripId = data.tripId || data.TripId;
+      const status = data.status || data.NewStatus;
+      const message = data.message || data.Message || `Trip ${tripId} status changed to ${status}`;
       console.log('Trip status changed:', data);
-      
       notificationService.addNotification({
         title: 'Trip Status Update',
-        body: data.message || `Trip status changed to ${data.status}`,
-        data: { type: 'trip_status_changed', ...data },
+        body: message,
+        data: { type: 'trip_status_changed', tripId, status, ...data },
+      });
+    });
+
+    // Backend sends ReceiveTripStatusChange (alternative event name)
+    this.tripConnection.on('ReceiveTripStatusChange', (data: unknown) => {
+      console.log('Received trip status change:', data);
+      const d = data as Record<string, unknown>;
+      notificationService.addNotification({
+        title: 'Trip Status Update',
+        body: `Trip status has been updated`,
+        data: { type: 'trip_status_changed', ...d },
       });
     });
 
     this.tripConnection.on('TripUpdated', (trip: unknown) => {
       console.log('Trip updated:', trip);
+    });
+
+    // Backend sends ReceiveTripUpdate
+    this.tripConnection.on('ReceiveTripUpdate', (data: unknown) => {
+      console.log('Received trip update:', data);
+    });
+
+    // Location updates for tracking
+    this.tripConnection.on('ReceiveLocationUpdate', (data: {
+      TripId: number;
+      Latitude: number;
+      Longitude: number;
+      Timestamp: string;
+    }) => {
+      console.log('Location update received:', data);
     });
 
     // Handle reconnection
@@ -199,6 +266,37 @@ class SignalRService {
       await connection.invoke(method, ...args);
     } catch (error) {
       console.error(`Error sending message to ${hubName} hub:`, error);
+    }
+  }
+
+  /**
+   * Subscribe to updates for a specific trip
+   */
+  async subscribeToTrip(tripId: number): Promise<void> {
+    if (!this.tripConnection || this.tripConnection.state !== signalR.HubConnectionState.Connected) {
+      console.error('Trip hub is not connected');
+      return;
+    }
+    try {
+      await this.tripConnection.invoke('SubscribeToTrip', tripId);
+      console.log(`Subscribed to trip ${tripId}`);
+    } catch (error) {
+      console.error(`Error subscribing to trip ${tripId}:`, error);
+    }
+  }
+
+  /**
+   * Unsubscribe from updates for a specific trip
+   */
+  async unsubscribeFromTrip(tripId: number): Promise<void> {
+    if (!this.tripConnection || this.tripConnection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
+    try {
+      await this.tripConnection.invoke('UnsubscribeFromTrip', tripId);
+      console.log(`Unsubscribed from trip ${tripId}`);
+    } catch (error) {
+      console.error(`Error unsubscribing from trip ${tripId}:`, error);
     }
   }
 
