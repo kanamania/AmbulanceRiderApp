@@ -70,7 +70,7 @@ npm run dev
 # http://localhost:5173
 ```
 
-See [QUICK_START.md](./QUICK_START.md) for detailed instructions.
+See [end-user-documentation.md](./end-user-documentation.md) for detailed instructions.
 
 ## 📦 Installation
 
@@ -78,7 +78,7 @@ See [QUICK_START.md](./QUICK_START.md) for detailed instructions.
 
 - **Node.js** 16.x or higher
 - **npm** or **yarn**
-- **Backend API** (see [API_SPECIFICATION.md](./API_SPECIFICATION.md))
+- **Backend API** (see [api-specifications.md](./api-specifications.md))
 
 ### Install Dependencies
 
@@ -136,26 +136,17 @@ Global Express/
 
 ## 📚 Documentation
 
-### Getting Started
-- **[QUICK_START.md](./QUICK_START.md)** - Get started in 5 minutes
-- **[ADMIN_QUICK_START.md](./ADMIN_QUICK_START.md)** - Admin panel quick start
-- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Detailed setup instructions
-- **[INSTALLATION_CHECKLIST.md](./INSTALLATION_CHECKLIST.md)** - Installation steps
+| Document | Description |
+|----------|-------------|
+| **[README.md](./README.md)** | This file - project overview |
+| **[CHANGELOG.md](./CHANGELOG.md)** | Version history and changes |
+| **[planning-implementation.md](./planning-implementation.md)** | Roadmap and technical debt |
+| **[end-user-documentation.md](./end-user-documentation.md)** | User guides and tutorials |
+| **[testing.md](./testing.md)** | Testing strategy and procedures |
+| **[api-specifications.md](./api-specifications.md)** | API integration reference |
 
-### Feature Guides
-- **[AUTH_README.md](./AUTH_README.md)** - Complete authentication guide
-- **[PASSWORD_RESET_GUIDE.md](./PASSWORD_RESET_GUIDE.md)** - Password reset flow
-- **[TRIP_BOOKING_USAGE_GUIDE.md](./TRIP_BOOKING_USAGE_GUIDE.md)** - Trip booking guide
-- **[DYNAMIC_TRIP_TYPES_GUIDE.md](./DYNAMIC_TRIP_TYPES_GUIDE.md)** - Dynamic trip types
-- **[VEHICLE_MANAGEMENT_IMPLEMENTATION.md](./VEHICLE_MANAGEMENT_IMPLEMENTATION.md)** - Vehicle management
-
-### Admin Panel
-- **[ADMIN_PANEL_COMPLETE.md](./ADMIN_PANEL_COMPLETE.md)** - Complete admin documentation
-- **[IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)** - Project status & completion
-
-### Technical
-- **[API_SPECIFICATION.md](./API_SPECIFICATION.md)** - Backend API requirements
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+### Backend Documentation
+See `../AmbulanceRider/` for backend API documentation.
 
 ## ⚙️ Configuration
 
@@ -360,7 +351,7 @@ This project is licensed under the MIT License.
 
 ### Getting Help
 
-1. Check the documentation
+1. Check [end-user-documentation.md](./end-user-documentation.md) troubleshooting section
 2. Review browser console
 3. Check Network tab for API errors
 4. Verify backend is running
@@ -427,4 +418,4 @@ This project is licensed under the MIT License.
 
 **Made with ❤️ using Ionic React**
 
-For detailed documentation, see the docs folder or individual markdown files in the project root.
+For detailed documentation, see end-user-documentation.md and api-specifications.md.

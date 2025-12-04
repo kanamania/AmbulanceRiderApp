@@ -5,12 +5,32 @@ All notable changes to the Global Express will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.1] - 2025-12-03
+## [0.0.22] - 2025-12-04T09:30:00+03:00
+
+### Added
+- Created `planning-implementation.md` with roadmap and technical debt
+- Created `end-user-documentation.md` with comprehensive user guides
+- Created `testing.md` with testing strategy and procedures
+- Created `api-specifications.md` aligned with backend API v0.0.19
 
 ### Changed
-- Restricted trip start action to authenticated drivers only.
+- Consolidated documentation to 6 core files per project rules
+- Updated README to reflect current features
 
-## [1.1.0] - 2025-10-26
+### Documentation
+- Identified 55 redundant .md files for removal (see planning-implementation.md)
+- All feature docs consolidated into core documentation
+
+---
+
+## [0.0.21] - 2025-12-03T12:00:00+03:00
+
+### Changed
+- Restricted trip start action to authenticated drivers only
+
+---
+
+## [0.0.20] - 2025-10-26
 
 ### Added - Password Reset Feature
 
@@ -37,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2025-10-26
+## [0.0.1] - 2025-10-26
 
 ### Added - Initial Release
 
@@ -195,47 +215,31 @@ src/
 
 ## Version History
 
-### [1.1.0] - 2025-10-26
-- Added password reset feature
-- Forgot password page
-- Reset password page
-- Email-based reset flow
-- Updated documentation
-
-### [1.0.0] - 2025-10-26
-- Initial release with complete authentication system
-- User registration and login
-- Protected routes
-- User profile management
-- Full documentation
+| Version | Date | Summary |
+|---------|------|---------|
+| 0.0.22 | 2025-12-04 | Documentation consolidation |
+| 0.0.21 | 2025-12-03 | Driver trip start restriction |
+| 0.0.20 | 2025-10-26 | Password reset feature |
+| 0.0.1 | 2025-10-26 | Initial release |
 
 ---
 
 ## Upgrade Guide
 
-### From 0.x to 1.0.0
-This is the initial release. No upgrade path needed.
+No breaking changes between versions. Update dependencies and clear cache.
 
 ---
 
 ## Breaking Changes
 
-### Version 1.0.0
-- Initial release - no breaking changes
-
----
-
-## Deprecations
-
-### Version 1.0.0
-- None
+None to date.
 
 ---
 
 ## Migration Guide
 
 ### New Installation
-Follow the QUICK_START.md guide for installation instructions.
+Follow README.md for installation instructions.
 
 ---
 
@@ -248,11 +252,7 @@ Follow the QUICK_START.md guide for installation instructions.
 ## Support
 
 For issues, questions, or contributions:
-1. Check the documentation
-2. Review TROUBLESHOOTING.md
+1. Check end-user-documentation.md
+2. Review testing.md for debugging tips
 3. Search existing issues
 4. Create a new issue with details
-
----
-
-**Note**: This changelog will be updated with each release. Please refer to the documentation for detailed information about features and usage.
