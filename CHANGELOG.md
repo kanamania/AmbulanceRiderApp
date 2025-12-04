@@ -5,6 +5,31 @@ All notable changes to the Global Express will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.24] - 2025-12-04T11:00:00+03:00
+
+### Added
+- Global ErrorBoundary component with fallback UI and recovery options
+- OfflineContext and OfflineProvider for offline mode detection
+- OfflineIndicator component showing connection status
+- ErrorService for centralized error parsing and handling
+- CacheManager service with stale-while-revalidate strategy
+- useOfflineData hook for offline-aware data fetching
+- Lazy loading for all page components
+- Code splitting with vendor chunking in Vite config
+
+### Changed
+- App.tsx now wraps entire app in ErrorBoundary
+- Added Suspense with PageLoader for lazy-loaded components
+- Vite build optimized with terser minification and console removal
+- Updated README with current features and roadmap
+
+### Performance
+- Vendor chunks: react, ionic, utils, capacitor
+- Lazy loading reduces initial bundle size
+- Memory + localStorage caching with TTL management
+
+---
+
 ## [0.0.23] - 2025-12-04T10:05:00+03:00
 
 ### Fixed
@@ -231,6 +256,7 @@ src/
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 0.0.24 | 2025-12-04 | Error boundary, offline mode, performance optimization |
 | 0.0.23 | 2025-12-04 | SignalR real-time notifications fix |
 | 0.0.22 | 2025-12-04 | Documentation consolidation |
 | 0.0.21 | 2025-12-03 | Driver trip start restriction |

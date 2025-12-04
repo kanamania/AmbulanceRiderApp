@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from 'react';
 import {Navigate, Route, Routes, BrowserRouter} from 'react-router-dom';
 import {
   IonApp,
@@ -7,25 +8,34 @@ import {
   IonTabBar,
   IonTabButton,
   IonTabs,
+  IonSpinner,
   setupIonicReact
 } from '@ionic/react';
 import {settingsSharp, homeSharp, statsChart} from 'ionicons/icons';
-import geIcon from '../public/ge-icon.png';
-import Home from './pages/Home';
-import Activity from './pages/Activity';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import ForgotPassword from './pages/ForgotPassword';
-import {ResetPassword} from './pages/ResetPassword';
-import Settings from "./pages/Settings";
-import NotificationsHistory from './pages/NotificationsHistory';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SyncProvider } from './contexts/SyncContext';
-import AdminRoutes from './routes/admin.routes';
-import './i18n'; // Initialize i18n
+import { OfflineProvider } from './contexts/OfflineContext';
+import './i18n';
+
+const Home = lazy(() => import('./pages/Home'));
+const Activity = lazy(() => import('./pages/Activity'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const Settings = lazy(() => import('./pages/Settings'));
+const NotificationsHistory = lazy(() => import('./pages/NotificationsHistory'));
+const AdminRoutes = lazy(() => import('./routes/admin.routes'));
+
+const PageLoader: React.FC = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+    <IonSpinner name="crescent" />
+  </div>
+);
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -65,65 +75,71 @@ const App: React.FC = () => {
   
   return (
     <IonApp>
-      <ThemeProvider>
-        <AuthProvider>
-          <SyncProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                
-                {/* Admin Routes */}
-                <Route path="/admin/*" element={<AdminRoutes />} />
-              
-                {/* Notifications History Route */}
-                <Route path="/notifications-history" element={
-                  <ProtectedRoute>
-                    <NotificationsHistory />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Protected Routes with Tabs */}
-                <Route path="/tabs/*" element={
-                  <ProtectedRoute>
-                    <IonTabs>
-                      <IonRouterOutlet>
-                        <Routes>
-                          <Route path="home" element={<Home />} />
-                          <Route path="activity" element={<Activity />} />
-                          <Route path="settings" element={<Settings />} />
-                          <Route path="profile" element={<Profile />} />
-                          <Route index element={<Navigate to="/tabs/home" replace />} />
-                        </Routes>
-                      </IonRouterOutlet>
-                      <IonTabBar slot="bottom">
-                        <IonTabButton tab="home" href="/tabs/home">
-                          <IonIcon aria-hidden="true" icon={homeSharp} />
-                          <IonLabel>Home</IonLabel>
-                        </IonTabButton>
-                        <IonTabButton tab="activity" href="/tabs/activity">
-                          <IonIcon aria-hidden="true" icon={statsChart} />
-                          <IonLabel>Activity</IonLabel>
-                        </IonTabButton>
-                        <IonTabButton tab="settings" href="/tabs/settings">
-                          <IonIcon aria-hidden="true" icon={settingsSharp} />
-                          <IonLabel>Settings</IonLabel>
-                        </IonTabButton>
-                      </IonTabBar>
-                    </IonTabs>
-                  </ProtectedRoute>
-                } />
-                
-                {/* Default Redirect */}
-                <Route path="/" element={<Navigate to="/tabs/home" replace />} />
-              </Routes>
-            </BrowserRouter>
-          </SyncProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <OfflineProvider>
+              <SyncProvider>
+                <BrowserRouter>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      
+                      {/* Admin Routes */}
+                      <Route path="/admin/*" element={<AdminRoutes />} />
+                      
+                      {/* Notifications History Route */}
+                      <Route path="/notifications-history" element={
+                        <ProtectedRoute>
+                          <NotificationsHistory />
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Protected Routes with Tabs */}
+                      <Route path="/tabs/*" element={
+                        <ProtectedRoute>
+                          <IonTabs>
+                            <IonRouterOutlet>
+                              <Routes>
+                                <Route path="home" element={<Home />} />
+                                <Route path="activity" element={<Activity />} />
+                                <Route path="settings" element={<Settings />} />
+                                <Route path="profile" element={<Profile />} />
+                                <Route index element={<Navigate to="/tabs/home" replace />} />
+                              </Routes>
+                            </IonRouterOutlet>
+                            <IonTabBar slot="bottom">
+                              <IonTabButton tab="home" href="/tabs/home">
+                                <IonIcon aria-hidden="true" icon={homeSharp} />
+                                <IonLabel>Home</IonLabel>
+                              </IonTabButton>
+                              <IonTabButton tab="activity" href="/tabs/activity">
+                                <IonIcon aria-hidden="true" icon={statsChart} />
+                                <IonLabel>Activity</IonLabel>
+                              </IonTabButton>
+                              <IonTabButton tab="settings" href="/tabs/settings">
+                                <IonIcon aria-hidden="true" icon={settingsSharp} />
+                                <IonLabel>Settings</IonLabel>
+                              </IonTabButton>
+                            </IonTabBar>
+                          </IonTabs>
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Default Redirect */}
+                      <Route path="/" element={<Navigate to="/tabs/home" replace />} />
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+              </SyncProvider>
+            </OfflineProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </IonApp>
   );
 };

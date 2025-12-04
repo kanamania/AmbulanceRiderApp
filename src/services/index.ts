@@ -17,3 +17,5 @@ export { default as dataHashService } from './dataHash.service';
 export { default as syncService } from './sync.service';
 export { default as backgroundSyncService } from './backgroundSync.service';
 export { default as systemSettingsService } from './systemSettings.service';
+export { default as errorService } from './error.service';
+export { default as cacheManager } from './cacheManager.service';

@@ -16,6 +16,7 @@ export interface Vehicle {
   image?: string;
   vehicleTypeId: number;
   vehicleType?: VehicleType;
+  status?: VehicleStatus;
   createdAt?: string;
   updatedAt?: string;
 }
