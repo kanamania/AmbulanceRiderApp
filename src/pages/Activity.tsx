@@ -41,7 +41,8 @@ import {
 } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
 import TripMap from '../components/TripMap';
-import { tripService, vehicleService, notificationService, cacheService } from '../services';
+import tripService from '../services/trip.service';
+import { vehicleService, notificationService, cacheService } from '../services';
 import { Driver, Trip, Vehicle } from '../types';
 import './Activity.css';
 import {useAuth} from "../contexts/useAuth";

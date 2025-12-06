@@ -32,7 +32,7 @@ import {
 } from 'ionicons/icons';
 import {AdminLayout} from '../../layouts/AdminLayout';
 import { Trip } from '../../types';
-import { tripService } from '../../services';
+import tripService from '../../services/trip.service';
 import './AdminPages.css';
 import {useSync} from "../../contexts/useSync";
 import {getNormalizedStatus, getStatusStyle} from '../../utils/statusStyles';

@@ -5,7 +5,7 @@
 export const APP_CONSTANTS = {
   // App Info
   APP_NAME: 'Global Express',
-  APP_VERSION: '0.1.1',
+  APP_VERSION: '0.2.0',
 
   // Token Expiration
   ACCESS_TOKEN_EXPIRY: 3600, // 1 hour in seconds

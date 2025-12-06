@@ -468,6 +468,7 @@ const Home: React.FC = () => {
                   <IonButton 
                     expand="block" 
                     fill="default"
+                    onClick={() => setShowFromPicker(true)}
                     style={{ marginTop: '20px' }}
                   >
                     <IonIcon
@@ -524,12 +525,12 @@ const Home: React.FC = () => {
                   <IonButton
                     expand="block"
                     fill="default"
+                    onClick={() => setShowToPicker(true)}
                     style={{ marginTop: '20px' }}
                   >
                     <IonIcon
                         size="large"
                         color="primary"
-                        onClick={() => setShowToPicker(true)}
                         icon={navigateCircleOutline} slot="start" />
                   </IonButton>
                 </IonCol>
