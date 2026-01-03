@@ -51,10 +51,10 @@ export const API_CONFIG = {
     },
     USERS: {
       LIST: '/users',
-      GET: (id: number) => `/users/${id}`,
+      GET: (id: string) => `/users/${id}`,
       CREATE: '/users',
-      UPDATE: (id: number) => `/users/${id}`,
-      DELETE: (id: number) => `/users/${id}`,
+      UPDATE: (id: string) => `/users/${id}`,
+      DELETE: (id: string) => `/users/${id}`,
     },
     LOCATIONS: {
       LIST: '/locations',
@@ -91,7 +91,7 @@ export const API_CONFIG = {
       BY_STATUS: (status: string) => `/trips/status/${status}`,
       PENDING: '/trips/pending',
       BY_ROUTE: (routeId: number) => `/trips/route/${routeId}`,
-      BY_DRIVER: (driverId: number) => `/trips/driver/${driverId}`,
+      BY_DRIVER: (driverId: string) => `/trips/driver/${driverId}`,
       APPROVE: (id: number) => `/trips/${id}/approve`,
       START: (id: number) => `/trips/${id}/start`,
       COMPLETE: (id: number) => `/trips/${id}/complete`,

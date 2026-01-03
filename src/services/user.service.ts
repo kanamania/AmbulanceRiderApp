@@ -41,7 +41,7 @@ class UserService {
   }
 
   // Get user by ID
-  async getUser(id: number): Promise<User> {
+  async getUser(id: string): Promise<User> {
     try {
       const response = await apiService.get<User>(API_CONFIG.ENDPOINTS.USERS.GET(id));
       return response;
@@ -52,7 +52,7 @@ class UserService {
   }
 
   // Get user by ID (alias)
-  async getUserById(id: number): Promise<User> {
+  async getUserById(id: string): Promise<User> {
     return this.getUser(id);
   }
 
@@ -91,7 +91,7 @@ class UserService {
   }
 
   // Update user (Admin only)
-  async updateUser(id: number, data: UpdateUserData): Promise<User> {
+  async updateUser(id: string, data: UpdateUserData): Promise<User> {
     try {
       const formData = new FormData();
       
@@ -126,7 +126,7 @@ class UserService {
   }
 
   // Delete user (Admin only)
-  async deleteUser(id: number): Promise<void> {
+  async deleteUser(id: string): Promise<void> {
     try {
       await apiService.delete(API_CONFIG.ENDPOINTS.USERS.DELETE(id));
     } catch (error) {

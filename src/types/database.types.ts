@@ -96,7 +96,7 @@ export interface DBTrip {
 }
 
 export interface DBUser {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;

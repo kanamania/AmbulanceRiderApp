@@ -112,7 +112,7 @@ class TripService {
   }
 
   // Get trips by driver
-  async getTripsByDriver(driverId: number): Promise<Trip[]> {
+  async getTripsByDriver(driverId: string): Promise<Trip[]> {
     try {
       const response = await apiService.get<Trip[]>(API_CONFIG.ENDPOINTS.TRIPS.BY_DRIVER(driverId));
       return response;

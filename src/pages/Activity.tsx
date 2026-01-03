@@ -1,1030 +1,1063 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { App } from '@capacitor/app';
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
+import {App} from '@capacitor/app';
 import {
-  IonContent,
-  IonPage,
-  IonRefresher,
-  IonRefresherContent,
-  IonSpinner,
-  IonBadge,
-  IonChip,
-  IonLabel,
-  IonItem,
-  IonIcon,
-  IonButton,
-  IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonList,
-  IonSelect,
-  IonSelectOption,
-  IonSearchbar,
-  useIonToast,
-  useIonAlert,
+    IonContent,
+    IonPage,
+    IonRefresher,
+    IonRefresherContent,
+    IonSpinner,
+    IonBadge,
+    IonChip,
+    IonLabel,
+    IonItem,
+    IonIcon,
+    IonButton,
+    IonModal,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonCard,
+    IonCardContent,
+    IonCardHeader,
+    IonCardTitle,
+    IonList,
+    IonSelect,
+    IonSelectOption,
+    IonSearchbar,
+    useIonToast,
+    useIonAlert,
 } from '@ionic/react';
 import {
-  list,
-  time,
-  car,
-  checkmarkCircle,
-  closeCircle,
-  alertCircle,
-  hourglass,
-  close,
-  person
+    list,
+    time,
+    car,
+    checkmarkCircle,
+    closeCircle,
+    alertCircle,
+    hourglass,
+    close,
+    person
 } from 'ionicons/icons';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import TripMap from '../components/TripMap';
 import tripService from '../services/trip.service';
-import { vehicleService, notificationService, cacheService } from '../services';
-import { Driver, Trip, Vehicle } from '../types';
+import {vehicleService, notificationService, cacheService} from '../services';
+import {Driver, Trip, Vehicle} from '../types';
 import './Activity.css';
 import {useAuth} from "../contexts/useAuth";
 import {getNormalizedStatus, getStatusStyle} from '../utils/statusStyles';
 
 const Activity: React.FC = () => {
-  const { t } = useTranslation();
-  const { hasRole, user } = useAuth();
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [showTripModal, setShowTripModal] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>();
-  const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>();
-  const [updating, setUpdating] = useState(false);
-  const [presentToast] = useIonToast();
-  const [presentAlert] = useIonAlert();
-  const [estKm, setEstKm] = useState<number | null>(null);
-  const [estMin, setEstMin] = useState<number | null>(null);
-  const [estimating, setEstimating] = useState(false);
-  const [showVehicleModal, setShowVehicleModal] = useState(false);
-  const [vehicleSearchText, setVehicleSearchText] = useState('');
-  const [driverSearchText, setDriverSearchText] = useState('');
+    const {t} = useTranslation();
+    const {hasRole, user} = useAuth();
+    const [trips, setTrips] = useState<Trip[]>([]);
+    const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+    const [showTripModal, setShowTripModal] = useState(false);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>();
+    const [selectedDriverId, setSelectedDriverId] = useState<string | undefined>();
+    const [updating, setUpdating] = useState(false);
+    const [presentToast] = useIonToast();
+    const [presentAlert] = useIonAlert();
+    const [estKm, setEstKm] = useState<number | null>(null);
+    const [estMin, setEstMin] = useState<number | null>(null);
+    const [estimating, setEstimating] = useState(false);
+    const [showVehicleModal, setShowVehicleModal] = useState(false);
+    const [vehicleSearchText, setVehicleSearchText] = useState('');
+    const [driverSearchText, setDriverSearchText] = useState('');
 
-  const isAdminOrDispatcher = hasRole('Admin', 'Dispatcher');
-  const isDriver = hasRole('Driver');
+    const isAdminOrDispatcher = hasRole('Admin', 'Dispatcher');
+    const isDriver = hasRole('Driver');
 
-  const normalizeStatus = useCallback((status: string) => getNormalizedStatus(status), []);
+    const normalizeStatus = useCallback((status: string) => getNormalizedStatus(status), []);
 
-  const getDisplayName = (user?: { name?: string; firstName?: string; lastName?: string; email?: string }) => {
-    if (!user) return '';
-    if (user.name && user.name.trim().length > 0) return user.name;
-    const composed = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    if (composed.length > 0) return composed;
-    return user.email ?? '';
-  };
+    const getDisplayName = (user?: { name?: string; firstName?: string; lastName?: string; email?: string }) => {
+        if (!user) return '';
+        if (user.name && user.name.trim().length > 0) return user.name;
+        const composed = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+        if (composed.length > 0) return composed;
+        return user.email ?? '';
+    };
 
-  const filterTrips = useCallback((tripsData: Trip[], status: string) => {
-    if (status === 'all') {
-      setFilteredTrips(tripsData);
-    } else {
-      setFilteredTrips(tripsData.filter((trip) => normalizeStatus(trip.status) === normalizeStatus(status)));
-    }
-  }, [normalizeStatus]);
-
-  const loadTrips = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await tripService.getAllTrips();
-      
-      // Filter trips based on user role
-      let filteredResponse = response;
-      console.log(response)
-      if (isAdminOrDispatcher) {
-        // Admin/Dispatcher see all trips
-        filteredResponse = response;
-      } else if (isDriver) {
-        // Driver gets assigned trips (driverId matches) or own trips (createdById matches)
-        filteredResponse = response.filter(trip => 
-          trip.driverId === user?.id || trip.creator?.id === user?.id
-        );
-      } else {
-        // User sees only own trips (createdById matches)
-        filteredResponse = response.filter(trip => trip.creator?.id === user?.id);
-      }
-      
-      setTrips(filteredResponse);
-      filterTrips(filteredResponse, statusFilter);
-    } catch (error) {
-      console.error('Error loading trips:', error);
-      presentToast({
-        message: t('messages.loadError'),
-        duration: 3000,
-        color: 'danger',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, t, presentToast, filterTrips, isAdminOrDispatcher, isDriver, user]);
-
-  const loadVehicles = async () => {
-    try {
-      const vehiclesData = await vehicleService.getVehicles({ status: 'available' });
-      setVehicles(vehiclesData.data);
-    } catch (error) {
-      console.error('Error loading vehicles:', error);
-    }
-  };
-
-  const loadDrivers = async () => {
-    try {
-      const cachedDrivers = await cacheService.getDrivers();
-      setDrivers(cachedDrivers);
-    } catch (error) {
-      console.error('Error loading drivers:', error);
-      setDrivers([]);
-    }
-  };
-
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadTrips();
-    event.detail.complete();
-  };
-
-  const handleStatusFilter = (status: string) => {
-    setStatusFilter(status);
-    filterTrips(trips, status);
-  };
-
-  const handleTripClick = (trip: Trip) => {
-    console.log(trip);
-    setSelectedTrip(trip);
-    setSelectedVehicleId(trip.vehicleId);
-    setSelectedDriverId(trip.driverId);
-    setShowTripModal(true);
-    // Reset estimation state for new trip
-    setEstKm(null);
-    setEstMin(null);
-    setEstimating(false);
-  };
-
-  // Filter vehicles based on search text
-  const filteredVehicles = useMemo(() => {
-    if (!vehicles || !Array.isArray(vehicles)) return [];
-    if (!vehicleSearchText.trim()) return vehicles;
-    const searchLower = vehicleSearchText.toLowerCase();
-    return vehicles.filter(vehicle => 
-      vehicle.plateNumber?.toLowerCase().includes(searchLower) ||
-      vehicle.name?.toLowerCase().includes(searchLower)
-    );
-  }, [vehicles, vehicleSearchText]);
-  const filteredDrivers = useMemo(() => {
-    if (!drivers || !Array.isArray(drivers)) return [];
-    if (!driverSearchText.trim()) return drivers;
-    const searchLower = driverSearchText.toLowerCase();
-    return drivers.filter(driver =>
-      driver.name?.toLowerCase().includes(searchLower)
-    );
-  }, [drivers, driverSearchText]);
-
-  const handleAcceptTrip = () => {
-    if (!selectedTrip) return;
-    // Show vehicle selection modal
-    setVehicleSearchText('');
-    setDriverSearchText('');
-    setShowVehicleModal(true);
-  };
-
-  const attemptTripApproval = async (vehicleId: number|undefined, driverId: string|undefined) => {
-    if (!selectedTrip) return;
-    if(!driverId || !vehicleId) return;
-
-    try {
-      setUpdating(true);
-      setShowVehicleModal(false);
-
-      await tripService.updateTripStatus({
-        id: selectedTrip.id,
-        status: 1, // Accepted
-        vehicleId,
-        driverId,
-      });
-      
-      // Send notification via backend (will broadcast via SignalR)
-      try {
-        await notificationService.notifyTripStatusChanged(selectedTrip.id, 'accepted');
-      } catch (notifError) {
-        console.error('Failed to send notification:', notifError);
-        // Don't fail the status update if notification fails
-      }
-      
-      presentToast({
-        message: 'Trip accepted successfully',
-        duration: 3000,
-        color: 'success',
-        icon: checkmarkCircle
-      });
-      
-      setShowTripModal(false);
-      // Reload trips
-      await loadTrips();
-    } catch (error) {
-      console.error('Error accepting trip:', error);
-      presentToast({
-        message: 'Failed to accept trip',
-        duration: 3000,
-        color: 'danger',
-        icon: alertCircle
-      });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleVehicleSelect = (vehicleId: number) => {
-    setSelectedVehicleId(vehicleId);
-  };
-
-  const handleDriverSelect = (driverId: string) => {
-    setSelectedDriverId(driverId);
-  };
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    if (!selectedTrip) return;
-    
-    // For accepting trips, validate vehicle selection
-    if (newStatus === 'accepted') {
-      if (!selectedVehicleId) {
-        presentToast({
-          message: 'Please select a vehicle before accepting the trip',
-          duration: 3000,
-          color: 'warning'
-        });
-        return;
-      }
-
-      if (!selectedDriverId) {
-        presentToast({
-          message: 'Please select a driver before accepting the trip',
-          duration: 3000,
-          color: 'warning'
-        });
-        return;
-      }
-    }
-    
-    if (newStatus === 'in_progress' && !isDriver) {
-      presentToast({
-        message: t('trip.driverOnlyStart'),
-        duration: 3000,
-        color: 'warning'
-      });
-      return;
-    }
-
-    let status = newStatus;
-    if(status === 'in_progress') {
-      status = 'in progress';
-    }
-    status = status.charAt(0).toUpperCase() + status.slice(1);
-
-    presentAlert({
-      header: 'Update Trip Status',
-      message: `Are you sure you want to change the status to ${status}?`,
-      inputs: newStatus === 'cancelled' ? [
-        {
-          name: 'reason',
-          type: 'textarea',
-          placeholder: 'Cancellation reason (optional)'
+    const filterTrips = useCallback((tripsData: Trip[], status: string) => {
+        if (status === 'all') {
+            setFilteredTrips(tripsData);
+        } else {
+            setFilteredTrips(tripsData.filter((trip) => normalizeStatus(trip.status) === normalizeStatus(status)));
         }
-      ] : [],
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel'
-        },
-        {
-          text: 'Confirm',
-          handler: async (data) => {
-            try {
-              setUpdating(true);
-              
-              // Map status to numeric value
-              const statusMap: { [key: string]: number } = {
-                'pending': 0,
-                'accepted': 1,
-                'rejected': 2,
-                'in_progress': 3,
-                'completed': 4,
-                'cancelled': 5
-              };
-              
-              await tripService.updateTripStatus({
+    }, [normalizeStatus]);
+
+    const loadTrips = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await tripService.getAllTrips();
+
+            // Filter trips based on user role
+            let filteredResponse = response;
+            console.log(response)
+            if (isAdminOrDispatcher) {
+                // Admin/Dispatcher see all trips
+                filteredResponse = response;
+            } else if (isDriver) {
+                // Driver gets assigned trips (driverId matches) or own trips (createdById matches)
+                filteredResponse = response.filter(trip =>
+                    trip.driverId === user?.id || trip.creator?.id === user?.id
+                );
+            } else {
+                // User sees only own trips (createdById matches)
+                filteredResponse = response.filter(trip => trip.creator?.id === user?.id);
+            }
+
+            setTrips(filteredResponse);
+            filterTrips(filteredResponse, statusFilter);
+        } catch (error) {
+            console.error('Error loading trips:', error);
+            presentToast({
+                message: t('messages.loadError'),
+                duration: 3000,
+                color: 'danger',
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [statusFilter, t, presentToast, filterTrips, isAdminOrDispatcher, isDriver, user]);
+
+    const loadVehicles = async () => {
+        try {
+            const vehiclesData = await vehicleService.getVehicles({status: 'available'});
+            setVehicles(vehiclesData.data);
+        } catch (error) {
+            console.error('Error loading vehicles:', error);
+        }
+    };
+
+    const loadDrivers = async () => {
+        try {
+            const cachedDrivers = await cacheService.getDrivers();
+            setDrivers(cachedDrivers);
+        } catch (error) {
+            console.error('Error loading drivers:', error);
+            setDrivers([]);
+        }
+    };
+
+    const handleRefresh = async (event: CustomEvent) => {
+        await loadTrips();
+        event.detail.complete();
+    };
+
+    const handleStatusFilter = (status: string) => {
+        setStatusFilter(status);
+        filterTrips(trips, status);
+    };
+
+    const handleTripClick = (trip: Trip) => {
+        console.log(trip);
+        setSelectedTrip(trip);
+        setSelectedVehicleId(trip.vehicleId);
+        setSelectedDriverId(trip.driverId);
+        setShowTripModal(true);
+        // Reset estimation state for new trip
+        setEstKm(null);
+        setEstMin(null);
+        setEstimating(false);
+    };
+
+    // Filter vehicles based on search text
+    const filteredVehicles = useMemo(() => {
+        if (!vehicles || !Array.isArray(vehicles)) return [];
+        if (!vehicleSearchText.trim()) return vehicles;
+        const searchLower = vehicleSearchText.toLowerCase();
+        return vehicles.filter(vehicle =>
+            vehicle.plateNumber?.toLowerCase().includes(searchLower) ||
+            vehicle.name?.toLowerCase().includes(searchLower)
+        );
+    }, [vehicles, vehicleSearchText]);
+    const filteredDrivers = useMemo(() => {
+        if (!drivers || !Array.isArray(drivers)) return [];
+        if (!driverSearchText.trim()) return drivers;
+        const searchLower = driverSearchText.toLowerCase();
+        return drivers.filter(driver =>
+            driver.name?.toLowerCase().includes(searchLower)
+        );
+    }, [drivers, driverSearchText]);
+
+    const handleAcceptTrip = () => {
+        if (!selectedTrip) return;
+        // Show vehicle selection modal
+        setVehicleSearchText('');
+        setDriverSearchText('');
+        setShowVehicleModal(true);
+    };
+
+    const attemptTripApproval = async (vehicleId: number | undefined, driverId: string | undefined) => {
+        if (!selectedTrip) return;
+        if (!driverId || !vehicleId) return;
+
+        try {
+            setUpdating(true);
+            setShowVehicleModal(false);
+
+            await tripService.updateTripStatus({
                 id: selectedTrip.id,
-                status: statusMap[newStatus],
-                vehicleId: selectedVehicleId,
-                driverId: selectedDriverId,
-                notes: data?.reason || undefined
-              });
-              
-              // Send notification via backend (will broadcast via SignalR)
-              try {
-                await notificationService.notifyTripStatusChanged(selectedTrip.id, newStatus);
-              } catch (notifError) {
+                status: 1, // Accepted
+                vehicleId,
+                driverId,
+            });
+
+            // Send notification via backend (will broadcast via SignalR)
+            try {
+                await notificationService.notifyTripStatusChanged(selectedTrip.id, 'accepted');
+            } catch (notifError) {
                 console.error('Failed to send notification:', notifError);
                 // Don't fail the status update if notification fails
-              }
-              
-              presentToast({
-                message: 'Trip status updated successfully',
+            }
+
+            presentToast({
+                message: 'Trip accepted successfully',
                 duration: 3000,
                 color: 'success',
                 icon: checkmarkCircle
-              });
-              
-              setShowTripModal(false);
-              // Reload trips
-              await loadTrips();
-            } catch (error) {
-              console.error('Error updating trip status:', error);
-              presentToast({
-                message: 'Failed to update trip status',
+            });
+
+            setShowTripModal(false);
+            // Reload trips
+            await loadTrips();
+        } catch (error) {
+            console.error('Error accepting trip:', error);
+            presentToast({
+                message: 'Failed to accept trip',
                 duration: 3000,
                 color: 'danger',
                 icon: alertCircle
-              });
-            } finally {
-              setUpdating(false);
-            }
-          }
+            });
+        } finally {
+            setUpdating(false);
         }
-      ]
-    });
-  };
+    };
 
-  const getStatusBadge = (status: string) => {
-    const normalized = normalizeStatus(status);
-    const { background, color } = getStatusStyle(normalized);
-    const badgeStyle = {
-      '--background': background,
-      '--color': color
-    } as React.CSSProperties;
+    const handleVehicleSelect = (vehicleId: number) => {
+        setSelectedVehicleId(vehicleId);
+    };
 
-    switch (normalized) {
-      case 'pending':
-        return <IonBadge style={badgeStyle}>{t('trip.pending')}</IonBadge>;
-      case 'approved':
-        return <IonBadge style={badgeStyle}>{t('trip.approved')}</IonBadge>;
-      case 'in_progress':
-        return <IonBadge style={badgeStyle}>{t('trip.inProgress')}</IonBadge>;
-      case 'completed':
-        return <IonBadge style={badgeStyle}>{t('trip.completed')}</IonBadge>;
-      case 'cancelled':
-        return <IonBadge style={badgeStyle}>{t('trip.cancelled')}</IonBadge>;
-      case 'rejected':
-        return <IonBadge style={badgeStyle}>{t('trip.rejected')}</IonBadge>;
-      default:
-        return <IonBadge style={badgeStyle}>{status}</IonBadge>;
-    }
-  };
+    const handleDriverSelect = (driverId: string) => {
+        setSelectedDriverId(driverId);
+    };
 
-  const getStatusIcon = (status: string) => {
-    switch (normalizeStatus(status)) {
-      case 'pending':
-        return hourglass;
-      case 'approved':
-        return checkmarkCircle;
-      case 'in_progress':
-        return car;
-      case 'rejected':
-        return closeCircle;
-      case 'completed':
-        return checkmarkCircle;
-      case 'cancelled':
-        return closeCircle;
-      default:
-        return alertCircle;
-    }
-  };
+    const handleStatusUpdate = async (newStatus: string) => {
+        if (!selectedTrip) return;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+        // For accepting trips, validate vehicle selection
+        if (newStatus === 'accepted') {
+            if (!selectedVehicleId) {
+                presentToast({
+                    message: 'Please select a vehicle before accepting the trip',
+                    duration: 3000,
+                    color: 'warning'
+                });
+                return;
+            }
 
-  const getCurrentPos = (): Promise<{ lat: number; lng: number }> =>
-    new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => {
-          if ((err as GeolocationPositionError)?.code === 1) {
-            App.exitApp();
+            if (!selectedDriverId) {
+                presentToast({
+                    message: 'Please select a driver before accepting the trip',
+                    duration: 3000,
+                    color: 'warning'
+                });
+                return;
+            }
+        }
+
+        if (newStatus === 'in_progress' && !isDriver) {
+            presentToast({
+                message: t('trip.driverOnlyStart'),
+                duration: 3000,
+                color: 'warning'
+            });
             return;
-          }
-          reject(err);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    });
+        }
 
-  const fetchLeg = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }): Promise<{ dist: number; dur: number } | null> => {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false&alternatives=false`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      const r = data?.routes?.[0];
-      if (!r) return null;
-      return { dist: r.distance || 0, dur: r.duration || 0 };
-    } catch {
-      return null;
-    }
-  };
+        let status = newStatus;
+        if (status === 'in_progress') {
+            status = 'in progress';
+        }
+        status = status.charAt(0).toUpperCase() + status.slice(1);
 
-  const computeFromCurrent = async () => {
-    if (!selectedTrip) return;
-    if (estimating) return;
-    if (estKm !== null && estMin !== null) return;
-    try {
-      setEstimating(true);
-      const cur = await getCurrentPos();
-      const leg1 = await fetchLeg(cur, { lat: selectedTrip.fromLatitude, lng: selectedTrip.fromLongitude });
-      const leg2 = await fetchLeg({ lat: selectedTrip.fromLatitude, lng: selectedTrip.fromLongitude }, { lat: selectedTrip.toLatitude, lng: selectedTrip.toLongitude });
-      if (leg1 && leg2) {
-        setEstKm((leg1.dist + leg2.dist) / 1000);
-        setEstMin((leg1.dur + leg2.dur) / 60);
-      }
-    } finally {
-      setEstimating(false);
-    }
-  };
+        presentAlert({
+            header: 'Update Trip Status',
+            message: `Are you sure you want to change the status to ${status}?`,
+            inputs: newStatus === 'cancelled' ? [
+                {
+                    name: 'reason',
+                    type: 'textarea',
+                    placeholder: 'Cancellation reason (optional)'
+                }
+            ] : [],
+            buttons: [
+                {
+                    text: 'Cancel',
+                    role: 'cancel'
+                },
+                {
+                    text: 'Confirm',
+                    handler: async (data) => {
+                        try {
+                            setUpdating(true);
 
-  const openDirections = async (fromLat: number, fromLng: number, toLat: number, toLng: number) => {
-    let originParam = 'Current+Location';
-    try {
-      const cur = await getCurrentPos();
-      originParam = `${cur.lat},${cur.lng}`;
-      if (estKm === null || estMin === null) {
-        computeFromCurrent();
-      }
-    } catch (e){
-      console.error('Error getting current position:', e);
-    }
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${toLat},${toLng}&waypoints=${fromLat},${fromLng}&travelmode=driving`;
-    window.open(url, '_blank');
-  };
+                            // Map status to numeric value
+                            const statusMap: { [key: string]: number } = {
+                                'pending': 0,
+                                'accepted': 1,
+                                'rejected': 2,
+                                'in_progress': 3,
+                                'completed': 4,
+                                'cancelled': 5
+                            };
 
-  const decodePolyline = (str: string): [number, number][] => {
-    let index = 0, lat = 0, lng = 0;
-    const coordinates: [number, number][] = [];
-    const len = str.length;
-    while (index < len) {
-      let b = 0, shift = 0, result = 0;
-      do {
-        b = str.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
-      lat += dlat;
-      shift = 0;
-      result = 0;
-      do {
-        b = str.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
-      lng += dlng;
-      coordinates.push([lat / 1e5, lng / 1e5]);
-    }
-    return coordinates;
-  };
+                            await tripService.updateTripStatus({
+                                id: selectedTrip.id,
+                                status: statusMap[newStatus],
+                                vehicleId: selectedVehicleId,
+                                driverId: selectedDriverId,
+                                notes: data?.reason || undefined
+                            });
 
-  const routePath = useMemo(() => {
-    if (!selectedTrip) return [] as { lat: number; lng: number }[];
-    const encoded = selectedTrip.routePolyline || selectedTrip.optimizedRoute || '';
-    if (!encoded) return [] as { lat: number; lng: number }[];
-    return decodePolyline(encoded).map(([la, ln]) => ({ lat: la, lng: ln }));
-  }, [selectedTrip]);
+                            // Send notification via backend (will broadcast via SignalR)
+                            try {
+                                await notificationService.notifyTripStatusChanged(selectedTrip.id, newStatus);
+                            } catch (notifError) {
+                                console.error('Failed to send notification:', notifError);
+                                // Don't fail the status update if notification fails
+                            }
 
-  useEffect(() => {
-    loadTrips();
-    if (isAdminOrDispatcher) {
-      loadVehicles();
-      loadDrivers();
-    }
-  }, [isAdminOrDispatcher, loadTrips]);
+                            presentToast({
+                                message: 'Trip status updated successfully',
+                                duration: 3000,
+                                color: 'success',
+                                icon: checkmarkCircle
+                            });
 
-  const tripCounts = {
-    all: trips.length,
-    pending: trips.filter((t) => normalizeStatus(t.status) === 'pending').length,
-    accepted: trips.filter((t) => normalizeStatus(t.status) === 'approved').length,
-    in_progress: trips.filter((t) => normalizeStatus(t.status) === 'in_progress').length,
-    completed: trips.filter((t) => normalizeStatus(t.status) === 'completed').length,
-    cancelled: trips.filter((t) => normalizeStatus(t.status) === 'cancelled').length,
-  };
+                            setShowTripModal(false);
+                            // Reload trips
+                            await loadTrips();
+                        } catch (error) {
+                            console.error('Error updating trip status:', error);
+                            presentToast({
+                                message: 'Failed to update trip status',
+                                duration: 3000,
+                                color: 'danger',
+                                icon: alertCircle
+                            });
+                        } finally {
+                            setUpdating(false);
+                        }
+                    }
+                }
+            ]
+        });
+    };
 
-  const renderStatusChip = (
-    statusKey: string,
-    label: string,
-    count: number
-  ) => {
-    if (count <= 0) return null;
-    const normalized = normalizeStatus(statusKey);
-    const { background, color } = getStatusStyle(normalized);
-    const isSelected = normalizeStatus(statusFilter) === normalized;
+    const getStatusBadge = (status: string) => {
+        const normalized = normalizeStatus(status);
+        const {background, color} = getStatusStyle(normalized);
+        const badgeStyle = {
+            '--background': background,
+            '--color': color
+        } as React.CSSProperties;
 
-    const chipStyle = {
-      border: `1px solid ${background}`,
-      '--color': isSelected ? color : background,
-      '--background': isSelected ? background : 'transparent'
-    } as React.CSSProperties;
+        switch (normalized) {
+            case 'pending':
+                return <IonBadge style={badgeStyle}>{t('trip.pending')}</IonBadge>;
+            case 'approved':
+                return <IonBadge style={badgeStyle}>{t('trip.approved')}</IonBadge>;
+            case 'in_progress':
+                return <IonBadge style={badgeStyle}>{t('trip.inProgress')}</IonBadge>;
+            case 'completed':
+                return <IonBadge style={badgeStyle}>{t('trip.completed')}</IonBadge>;
+            case 'cancelled':
+                return <IonBadge style={badgeStyle}>{t('trip.cancelled')}</IonBadge>;
+            case 'rejected':
+                return <IonBadge style={badgeStyle}>{t('trip.rejected')}</IonBadge>;
+            default:
+                return <IonBadge style={badgeStyle}>{status}</IonBadge>;
+        }
+    };
 
-    const badgeStyle = {
-      '--background': background,
-      '--color': color,
-      marginLeft: '8px'
-    } as React.CSSProperties;
+    const getStatusIcon = (status: string) => {
+        switch (normalizeStatus(status)) {
+            case 'pending':
+                return hourglass;
+            case 'approved':
+                return checkmarkCircle;
+            case 'in_progress':
+                return car;
+            case 'rejected':
+                return closeCircle;
+            case 'completed':
+                return checkmarkCircle;
+            case 'cancelled':
+                return closeCircle;
+            default:
+                return alertCircle;
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const getCurrentPos = (): Promise<{ lat: number; lng: number }> =>
+        new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
+                (err) => {
+                    if ((err as GeolocationPositionError)?.code === 1) {
+                        App.exitApp();
+                        return;
+                    }
+                    reject(err);
+                },
+                {enableHighAccuracy: true, timeout: 10000}
+            );
+        });
+
+    const fetchLeg = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }): Promise<{
+        dist: number;
+        dur: number
+    } | null> => {
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false&alternatives=false`;
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            const data = await res.json();
+            const r = data?.routes?.[0];
+            if (!r) return null;
+            return {dist: r.distance || 0, dur: r.duration || 0};
+        } catch {
+            return null;
+        }
+    };
+
+    const computeFromCurrent = async () => {
+        if (!selectedTrip) return;
+        if (estimating) return;
+        if (estKm !== null && estMin !== null) return;
+        try {
+            setEstimating(true);
+            const cur = await getCurrentPos();
+            const leg1 = await fetchLeg(cur, {lat: selectedTrip.fromLatitude, lng: selectedTrip.fromLongitude});
+            const leg2 = await fetchLeg({
+                lat: selectedTrip.fromLatitude,
+                lng: selectedTrip.fromLongitude
+            }, {lat: selectedTrip.toLatitude, lng: selectedTrip.toLongitude});
+            if (leg1 && leg2) {
+                setEstKm((leg1.dist + leg2.dist) / 1000);
+                setEstMin((leg1.dur + leg2.dur) / 60);
+            }
+        } finally {
+            setEstimating(false);
+        }
+    };
+
+    const openDirections = async (fromLat: number, fromLng: number, toLat: number, toLng: number) => {
+        let originParam = 'Current+Location';
+        try {
+            const cur = await getCurrentPos();
+            originParam = `${cur.lat},${cur.lng}`;
+            if (estKm === null || estMin === null) {
+                computeFromCurrent();
+            }
+        } catch (e) {
+            console.error('Error getting current position:', e);
+        }
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${toLat},${toLng}&waypoints=${fromLat},${fromLng}&travelmode=driving`;
+        window.open(url, '_blank');
+    };
+
+    const decodePolyline = (str: string): [number, number][] => {
+        let index = 0, lat = 0, lng = 0;
+        const coordinates: [number, number][] = [];
+        const len = str.length;
+        while (index < len) {
+            let b = 0, shift = 0, result = 0;
+            do {
+                b = str.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+            lat += dlat;
+            shift = 0;
+            result = 0;
+            do {
+                b = str.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+            lng += dlng;
+            coordinates.push([lat / 1e5, lng / 1e5]);
+        }
+        return coordinates;
+    };
+
+    const routePath = useMemo(() => {
+        if (!selectedTrip) return [] as { lat: number; lng: number }[];
+        const encoded = selectedTrip.routePolyline || selectedTrip.optimizedRoute || '';
+        if (!encoded) return [] as { lat: number; lng: number }[];
+        return decodePolyline(encoded).map(([la, ln]) => ({lat: la, lng: ln}));
+    }, [selectedTrip]);
+
+    useEffect(() => {
+        loadTrips();
+        if (isAdminOrDispatcher) {
+            loadVehicles();
+            loadDrivers();
+        }
+    }, [isAdminOrDispatcher, loadTrips]);
+
+    const tripCounts = {
+        all: trips.length,
+        pending: trips.filter((t) => normalizeStatus(t.status) === 'pending').length,
+        accepted: trips.filter((t) => normalizeStatus(t.status) === 'approved').length,
+        in_progress: trips.filter((t) => normalizeStatus(t.status) === 'in_progress').length,
+        completed: trips.filter((t) => normalizeStatus(t.status) === 'completed').length,
+        cancelled: trips.filter((t) => normalizeStatus(t.status) === 'cancelled').length,
+    };
+
+    const renderStatusChip = (
+        statusKey: string,
+        label: string,
+        count: number
+    ) => {
+        if (count <= 0) return null;
+        const normalized = normalizeStatus(statusKey);
+        const {background, color} = getStatusStyle(normalized);
+        const isSelected = normalizeStatus(statusFilter) === normalized;
+
+        const chipStyle = {
+            border: `1px solid ${background}`,
+            '--color': isSelected ? color : background,
+            '--background': isSelected ? background : 'transparent'
+        } as React.CSSProperties;
+
+        const badgeStyle = {
+            '--background': background,
+            '--color': color,
+            marginLeft: '8px'
+        } as React.CSSProperties;
+
+        return (
+            <IonChip
+                key={statusKey}
+                outline={!isSelected}
+                style={chipStyle}
+                onClick={() => handleStatusFilter(statusKey)}
+            >
+                <IonLabel>{label}</IonLabel>
+                <IonBadge style={badgeStyle}>
+                    {count}
+                </IonBadge>
+            </IonChip>
+        );
+    };
 
     return (
-      <IonChip
-        key={statusKey}
-        outline={!isSelected}
-        style={chipStyle}
-        onClick={() => handleStatusFilter(statusKey)}
-      >
-        <IonLabel>{label}</IonLabel>
-        <IonBadge style={badgeStyle}>
-          {count}
-        </IonBadge>
-      </IonChip>
-    );
-  };
+        <IonPage>
+            <IonContent className="ion-padding">
+                <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+                    <IonRefresherContent></IonRefresherContent>
+                </IonRefresher>
 
-  return (
-    <IonPage>
-      <IonContent className="ion-padding">
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent></IonRefresherContent>
-        </IonRefresher>
-
-        <div className="status-filters" style={{ marginBottom: '16px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px' }}>
-          <IonChip
-            outline={statusFilter !== 'all'}
-            color={statusFilter === 'all' ? 'primary' : 'medium'}
-            onClick={() => handleStatusFilter('all')}
-          >
-            <IonLabel>{t('common.all')}</IonLabel>
-            <IonBadge color={statusFilter === 'all' ? 'primary' : 'medium'} style={{ marginLeft: '8px' }}>{tripCounts.all}</IonBadge>
-          </IonChip>
-
-          {renderStatusChip('pending', t('trip.pending'), tripCounts.pending)}
-          {renderStatusChip('accepted', t('trip.approved'), tripCounts.accepted)}
-          {renderStatusChip('in_progress', t('trip.inProgress'), tripCounts.in_progress)}
-          {renderStatusChip('completed', t('trip.completed'), tripCounts.completed)}
-          {renderStatusChip('cancelled', t('trip.cancelled'), tripCounts.cancelled)}
-        </div>
-
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-            <IonSpinner name="crescent" />
-          </div>
-        ) : filteredTrips.length === 0 ? (
-          <div style={{ textAlign: 'center', marginTop: '50px' }}>
-            <IonIcon icon={list} style={{ fontSize: '64px', color: '#ccc' }} />
-            <h3>{t('trip.noTrips')}</h3>
-            <p>{t('trip.noTripsMessage')}</p>
-          </div>
-        ) : (
-          <div>
-            {filteredTrips.map((trip) => (
-              <IonCard key={trip.id} button onClick={() => handleTripClick(trip)}>
-                <IonCardContent>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <IonIcon
-                        icon={getStatusIcon(trip.status)}
-                        style={{ color: getStatusStyle(normalizeStatus(trip.status)).background }}
-                      />
-                      <strong>Trip #{trip.id} - {trip.name}</strong>
-                      {trip.estimatedDistance != null && (
-                        <small style={{ color: '#666' }}>
-                          {(trip.estimatedDistance / 1000).toFixed(1)} km
-                        </small>
-                      )}
-                    </div>
-                    {getStatusBadge(trip.status)}
-                  </div>
-
-                  {trip.creator && (
-                    <IonItem lines="none">
-                      <IonIcon icon={car} slot="start" color="success" />
-                      <IonLabel>
-                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.creator')}</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>
-                          {trip.creator.name}
-                        </h3>
-                      </IonLabel>
-                    </IonItem>
-                  )}
-                  {trip.vehicle && (
-                    <IonItem lines="none">
-                      <IonIcon icon={car} slot="start" color="success" />
-                      <IonLabel>
-                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.vehicle')}</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>
-                          {trip.vehicle.name}
-                        </h3>
-                      </IonLabel>
-                    </IonItem>
-                  )}
-
-                  {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.creator && (
-                    <IonItem lines="none">
-                      <IonIcon icon={person} slot="start" color="medium" />
-                      <IonLabel>
-                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.creator')}</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{getDisplayName(trip.creator)}</h3>
-                      </IonLabel>
-                    </IonItem>
-                  )}
-
-                  {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.driver && (
-                    <IonItem lines="none">
-                      <IonIcon icon={person} slot="start" color="primary" />
-                      <IonLabel>
-                        <p style={{ fontSize: '12px', color: '#666' }}>{t('trip.driver')}</p>
-                        <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{getDisplayName(trip.driver)}</h3>
-                      </IonLabel>
-                    </IonItem>
-                  )}
-
-                  <IonItem lines="none">
-                    <IonIcon icon={time} slot="start" color="medium" />
-                    <IonLabel>
-                      <h3 style={{ fontSize: '14px', margin: '4px 0' }}>{formatDate(trip.createdAt)}</h3>
-                    </IonLabel>
-                  </IonItem>
-                </IonCardContent>
-              </IonCard>
-            ))}
-          </div>
-        )}
-
-        {/* Trip Summary Modal */}
-        <IonModal isOpen={showTripModal} onDidDismiss={() => setShowTripModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('trip.tripDetails')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowTripModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="ion-no-padding">
-            {selectedTrip && (
-              <>
-                <IonCard>
-                  <IonCardHeader>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexDirection: 'column' }}>
-                      <IonCardTitle>Trip #{selectedTrip.id} - {selectedTrip.name}</IonCardTitle>
-                      <small>{getStatusBadge(selectedTrip.status)}</small>
-                      <p>Requestor: {selectedTrip.creator?.name} - {selectedTrip.creator?.company?.name}</p>
-                      <p>{formatDate(selectedTrip.createdAt)}</p>
-                    </div>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <IonList lines="none">
-                      {/* Route Preview */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
-                          Route Preview
-                        </h3>
-                        <TripMap
-                          fromLocation={{
-                            lat: selectedTrip.fromLatitude,
-                            lng: selectedTrip.fromLongitude,
-                            name: selectedTrip.fromLocationName
-                          }}
-                          toLocation={{
-                            lat: selectedTrip.toLatitude,
-                            lng: selectedTrip.toLongitude,
-                            name: selectedTrip.toLocationName
-                          }}
-                          route={routePath}
-                        />
-
-                        {(selectedTrip.estimatedDistance != null || selectedTrip.estimatedDuration != null) && (
-                          <div style={{ marginTop: 12, marginBottom: 6, fontSize: 14 }}>
-                            Server estimate: 
-                            {selectedTrip.estimatedDistance != null && (
-                              <> {(selectedTrip.estimatedDistance / 1000).toFixed(1)} km</>
-                            )}
-                            {selectedTrip.estimatedDuration != null && (
-                              <> {selectedTrip.estimatedDistance != null ? ', ' : ''}{Math.round(selectedTrip.estimatedDuration / 60)} min</>
-                            )}
-                          </div>
-                        )}
-                        {estKm !== null && estMin !== null && (
-                          <div style={{ marginBottom: 12, fontSize: 14 }}>
-                            From my location: {estKm.toFixed(1)} km, {Math.round(estMin)} min
-                          </div>
-                        )}
-                        
-                        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <IonButton 
-                            onClick={() => openDirections(selectedTrip.fromLatitude, selectedTrip.fromLongitude, selectedTrip.toLatitude, selectedTrip.toLongitude)}
-                          >
-                            Open Directions
-                          </IonButton>
-                          <IonButton 
-                            fill="outline" 
-                            onClick={computeFromCurrent} 
-                            disabled={estimating}
-                          >
-                            {estimating ? 'Computing…' : 'Use My Location'}
-                          </IonButton>
-                        </div>
-                      </div>
-
-                      {selectedTrip.description && (
-                        <IonItem>
-                          <IonLabel>
-                            <h3>Notes</h3>
-                            <p>{selectedTrip.description}</p>
-                          </IonLabel>
-                        </IonItem>
-                      )}
-
-                      {/* Vehicle Selection for Admin/Dispatcher */}
-                      {isAdminOrDispatcher && selectedTrip.status === 'pending' && (
-                          <>
-                        <IonItem>
-                          <IonLabel position="stacked">{t('trip.selectVehicle')} *</IonLabel>
-                          <IonSelect
-                            value={selectedVehicleId}
-                            onIonChange={(e) => setSelectedVehicleId(e.detail.value)}
-                            placeholder={t('trip.selectVehicle')}
-                            interface="action-sheet"
-                          >
-                            {vehicles.map((vehicle) => (
-                              <IonSelectOption key={vehicle.id} value={vehicle.id}>
-                                {vehicle.name} - {vehicle.plateNumber}
-                              </IonSelectOption>
-                            ))}
-                          </IonSelect>
-                        </IonItem>
-                        <IonItem>
-                          <IonLabel position="stacked">{t('trip.selectDriver')} *</IonLabel>
-                          <IonSelect
-                            value={selectedDriverId}
-                            onIonChange={(e) => setSelectedDriverId(e.detail.value)}
-                            placeholder={t('trip.selectDriver')}
-                            interface="action-sheet"
-                          >
-                            {drivers.map((driver) => (
-                              <IonSelectOption key={driver.id} value={driver.id}>
-                                {driver.firstName + ' ' + driver.lastName}
-                              </IonSelectOption>
-                            ))}
-                          </IonSelect>
-                        </IonItem>
-                          </>
-                      )}
-
-                      {/* Display assigned vehicle */}
-                      {selectedTrip.vehicle && (
-                        <IonItem>
-                          <IonIcon icon={car} slot="start" color="primary" />
-                          <IonLabel>
-                            <h3>{t('trip.assignedVehicle')}</h3>
-                            <p>
-                              {selectedTrip.vehicle.name}
-                            </p>
-                          </IonLabel>
-                        </IonItem>
-                      )}
-
-                      {/* Display assigned driver */}
-                      {selectedTrip.driver && (
-                        <IonItem>
-                          <IonIcon icon={person} slot="start" color="tertiary" />
-                          <IonLabel>
-                            <h3>Assigned Driver</h3>
-                            <p>
-                              {selectedTrip.driver.firstName} {selectedTrip.driver.lastName}
-                            </p>
-                            {selectedTrip.driver.email && (
-                              <p style={{ fontSize: '12px', color: '#666' }}>
-                                {selectedTrip.driver.email}
-                              </p>
-                            )}
-                          </IonLabel>
-                        </IonItem>
-                      )}
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
-
-                {/* Action Buttons */}
-                <div style={{ marginTop: '16px', padding: '0 16px 16px' }}>
-                  {normalizeStatus(selectedTrip.status) === 'pending' && isAdminOrDispatcher && (
-                    <>
-                      <IonButton 
-                        expand="block" 
-                        color="success"
-                        onClick={handleAcceptTrip}
-                        disabled={updating}
-                      >
-                        <IonIcon icon={checkmarkCircle} slot="start" />
-                        Approve Trip
-                      </IonButton>
-                      <IonButton 
-                        expand="block" 
-                        color="danger"
-                        fill="outline"
-                        onClick={() => handleStatusUpdate('rejected')}
-                        disabled={updating}
-                      >
-                        <IonIcon icon={closeCircle} slot="start" />
-                        Reject Trip
-                      </IonButton>
-                    </>
-                  )}
-                  
-                  {normalizeStatus(selectedTrip.status) === 'approved' && isDriver && (
-                    <IonButton 
-                      expand="block" 
-                      color="primary"
-                      onClick={() => handleStatusUpdate('in_progress')}
-                      disabled={updating}
+                <div className="status-filters" style={{
+                    marginBottom: '16px',
+                    overflowX: 'auto',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    gap: '8px'
+                }}>
+                    <IonChip
+                        outline={statusFilter !== 'all'}
+                        color={statusFilter === 'all' ? 'primary' : 'medium'}
+                        onClick={() => handleStatusFilter('all')}
                     >
-                      <IonIcon icon={car} slot="start" />
-                      Start Trip
-                    </IonButton>
-                  )}
-                  
-                  {normalizeStatus(selectedTrip.status) === 'in_progress' && (
-                    <IonButton 
-                      expand="block" 
-                      color="success"
-                      onClick={() => handleStatusUpdate('completed')}
-                      disabled={updating}
-                    >
-                      <IonIcon icon={checkmarkCircle} slot="start" />
-                      Complete Trip
-                    </IonButton>
-                  )}
-                  
-                  {['pending'].includes(normalizeStatus(selectedTrip.status)) && selectedTrip.creator?.id == user?.id && (
-                    <IonButton 
-                      expand="block" 
-                      color="danger"
-                      fill="outline"
-                      onClick={() => handleStatusUpdate('cancelled')}
-                      disabled={updating}
-                      style={{ marginTop: '8px' }}
-                    >
-                      <IonIcon icon={closeCircle} slot="start" />
-                      Cancel Trip
-                    </IonButton>
-                  )}
-                  {['approved'].includes(normalizeStatus(selectedTrip.status)) && isAdminOrDispatcher && (
-                    <IonButton
-                      expand="block"
-                      color="danger"
-                      fill="outline"
-                      onClick={() => handleStatusUpdate('cancelled')}
-                      disabled={updating}
-                      style={{ marginTop: '8px' }}
-                    >
-                      <IonIcon icon={closeCircle} slot="start" />
-                      Cancel Approved Trip
-                    </IonButton>
-                  )}
+                        <IonLabel>{t('common.all')}</IonLabel>
+                        <IonBadge color={statusFilter === 'all' ? 'primary' : 'medium'}
+                                  style={{marginLeft: '8px'}}>{tripCounts.all}</IonBadge>
+                    </IonChip>
+
+                    {renderStatusChip('pending', t('trip.pending'), tripCounts.pending)}
+                    {renderStatusChip('accepted', t('trip.approved'), tripCounts.accepted)}
+                    {renderStatusChip('in_progress', t('trip.inProgress'), tripCounts.in_progress)}
+                    {renderStatusChip('completed', t('trip.completed'), tripCounts.completed)}
+                    {renderStatusChip('cancelled', t('trip.cancelled'), tripCounts.cancelled)}
                 </div>
-              </>
-            )}
-          </IonContent>
-        </IonModal>
 
-        {/* Vehicle Selection Modal */}
-        <IonModal isOpen={showVehicleModal} onDidDismiss={() => setShowVehicleModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Select Vehicle and Driver</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowVehicleModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            {updating && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-                <IonSpinner />
-              </div>
-            )}
-            {!updating && filteredVehicles.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
-                <IonIcon icon={car} style={{ fontSize: '64px', color: '#ccc' }} />
-                <h3>No vehicles found</h3>
-                <p>{vehicleSearchText ? 'Try a different search term' : 'No available vehicles'}</p>
-              </div>
-            )}
-            {!updating && filteredVehicles.length > 0 && (
-              <div style={{display: 'flex', justifyContent: 'space-between'}}>
-              <div style={{height: '50%'}}>
-                <IonToolbar>
-                  <IonSearchbar
-                    value={vehicleSearchText}
-                    onIonInput={(e) => setVehicleSearchText(e.detail.value || '')}
-                    placeholder="Search vehicle by name or plate number"
-                    debounce={300}
-                  />
-                </IonToolbar>
-                <IonList>
-                  {filteredVehicles.map((vehicle) => (
-                      <IonItem
-                          key={vehicle.id}
-                          button
-                          onClick={() => handleVehicleSelect(vehicle.id)}
-                          detail={true}
-                          style={{
-                            backgroundColor: selectedVehicleId === vehicle.id ? '#dbeafe' : undefined,
-                            border: selectedVehicleId === vehicle.id ? '2px solid #3b82f6' : undefined,
-                            color: selectedVehicleId === vehicle.id ? '#1e3a8a' : undefined,
-                            transition: 'all 0.15s'
-                          }}
-                      >
-                        <IonIcon icon={car} slot="start" color="primary" />
-                        <IonLabel>
-                          <h2>{vehicle.name}</h2>
-                          <p>Plate Number: {vehicle.plateNumber}</p>
-                        </IonLabel>
-                      </IonItem>
-                  ))}
-                </IonList>
-              </div>
-              <div style={{height: '50%'}}>
-                <IonToolbar>
-                  <IonSearchbar
-                    value={driverSearchText}
-                    onIonInput={(e) => setDriverSearchText(e.detail.value || '')}
-                    placeholder="Search driver by name"
-                    debounce={300}
-                  />
-                </IonToolbar>
-                <IonList>
-                  {filteredDrivers.map((driver) => (
-                      <IonItem
-                          key={driver.id}
-                          button
-                          onClick={() => handleDriverSelect(driver.id)}
-                          detail={true}
-                          style={{
-                            backgroundColor: selectedDriverId === driver.id ? '#dbeafe' : undefined,
-                            border: selectedDriverId === driver.id ? '2px solid #3b82f6' : undefined,
-                            color: selectedDriverId === driver.id ? '#1e3a8a' : undefined,
-                            transition: 'all 0.15s'
-                          }}
-                      >
-                        <IonIcon icon={person} slot="start" color="primary" />
-                        <IonLabel>
-                          <h2>{driver.firstName + ' ' + driver.lastName}</h2>
-                        </IonLabel>
-                      </IonItem>
-                  ))}
-                </IonList>
-              </div>
-              </div>
-            )}
-            <IonButton 
-              expand="block" 
-              color="success"
-              onClick={() => attemptTripApproval(selectedVehicleId!, selectedDriverId!)}
-              disabled={!selectedVehicleId || !selectedDriverId || updating}
-              style={{ margin: '16px' }}
-            >
-              <IonIcon icon={checkmarkCircle} slot="start" />
-              Confirm Assignment
-            </IonButton>
-          </IonContent>
-        </IonModal>
-      </IonContent>
-    </IonPage>
-  );
+                {loading ? (
+                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh'}}>
+                        <IonSpinner name="crescent"/>
+                    </div>
+                ) : filteredTrips.length === 0 ? (
+                    <div style={{textAlign: 'center', marginTop: '50px'}}>
+                        <IonIcon icon={list} style={{fontSize: '64px', color: '#ccc'}}/>
+                        <h3>{t('trip.noTrips')}</h3>
+                        <p>{t('trip.noTripsMessage')}</p>
+                    </div>
+                ) : (
+                    <div>
+                        {filteredTrips.map((trip) => (
+                            <IonCard key={trip.id} button onClick={() => handleTripClick(trip)}>
+                                <IonCardContent>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '8px'
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            flexWrap: 'wrap'
+                                        }}>
+                                            <IonIcon
+                                                icon={getStatusIcon(trip.status)}
+                                                style={{color: getStatusStyle(normalizeStatus(trip.status)).background}}
+                                            />
+                                            <strong>Trip #{trip.id} - {trip.name}</strong>
+                                            {trip.estimatedDistance != null && (
+                                                <small style={{color: '#666'}}>
+                                                    {(trip.estimatedDistance / 1000).toFixed(1)} km
+                                                </small>
+                                            )}
+                                        </div>
+                                        {getStatusBadge(trip.status)}
+                                    </div>
+
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '8px'
+                                    }}>
+                                        {trip.vehicle && (
+                                            <div>
+                                                <p style={{fontSize: '12px', color: '#666'}}>{t('trip.vehicle')}</p>
+                                                <h3 style={{fontSize: '14px', margin: '4px 0'}}>
+                                                    {trip.vehicle.name}
+                                                </h3>
+                                            </div>
+                                        )}
+
+                                        {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.driver && (
+                                            <div>
+                                                <p style={{fontSize: '12px', color: '#666'}}>{t('trip.driver')}</p>
+                                                <h3 style={{
+                                                    fontSize: '14px',
+                                                    margin: '4px 0'
+                                                }}>{getDisplayName(trip.driver)}</h3>
+                                            </div>
+                                        )}
+
+                                        {['approved', 'in_progress', 'completed', 'cancelled'].includes(normalizeStatus(trip.status)) && trip.creator && (
+                                            <div>
+                                                <p style={{fontSize: '12px', color: '#666'}}>{t('trip.creator')}</p>
+                                                <h3 style={{
+                                                    fontSize: '14px',
+                                                    margin: '4px 0'
+                                                }}>{getDisplayName(trip.creator)}</h3>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <h3 style={{
+                                                fontSize: '14px',
+                                                margin: '4px 0'
+                                            }}>{formatDate(trip.createdAt)}</h3>
+                                        </div>
+                                    </div>
+                                </IonCardContent>
+                            </IonCard>
+                        ))}
+                    </div>
+                )}
+
+                {/* Trip Summary Modal */}
+                <IonModal isOpen={showTripModal} onDidDismiss={() => setShowTripModal(false)}>
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle>{t('trip.tripDetails')}</IonTitle>
+                            <IonButtons slot="end">
+                                <IonButton onClick={() => setShowTripModal(false)}>
+                                    <IonIcon icon={close}/>
+                                </IonButton>
+                            </IonButtons>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent className="ion-no-padding">
+                        {selectedTrip && (
+                            <>
+                                <IonCard>
+                                    <IonCardHeader>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'start',
+                                            flexDirection: 'column'
+                                        }}>
+                                            <IonCardTitle>Trip #{selectedTrip.id} - {selectedTrip.name}</IonCardTitle>
+                                            <small>{getStatusBadge(selectedTrip.status)}</small>
+                                            <p>Requestor: {selectedTrip.creator?.name} - {selectedTrip.creator?.company?.name}</p>
+                                            <p>{formatDate(selectedTrip.createdAt)}</p>
+                                        </div>
+                                    </IonCardHeader>
+                                    <IonCardContent>
+                                        <IonList lines="none">
+                                            {/* Route Preview */}
+                                            <div style={{marginBottom: '16px'}}>
+                                                <h3 style={{
+                                                    marginTop: 0,
+                                                    marginBottom: '12px',
+                                                    fontSize: '16px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    Route Preview
+                                                </h3>
+                                                <TripMap
+                                                    fromLocation={{
+                                                        lat: selectedTrip.fromLatitude,
+                                                        lng: selectedTrip.fromLongitude,
+                                                        name: selectedTrip.fromLocationName
+                                                    }}
+                                                    toLocation={{
+                                                        lat: selectedTrip.toLatitude,
+                                                        lng: selectedTrip.toLongitude,
+                                                        name: selectedTrip.toLocationName
+                                                    }}
+                                                    route={routePath}
+                                                />
+
+                                                {(selectedTrip.estimatedDistance != null || selectedTrip.estimatedDuration != null) && (
+                                                    <div style={{marginTop: 12, marginBottom: 6, fontSize: 14}}>
+                                                        Server estimate:
+                                                        {selectedTrip.estimatedDistance != null && (
+                                                            <> {(selectedTrip.estimatedDistance / 1000).toFixed(1)} km</>
+                                                        )}
+                                                        {selectedTrip.estimatedDuration != null && (
+                                                            <> {selectedTrip.estimatedDistance != null ? ', ' : ''}{Math.round(selectedTrip.estimatedDuration / 60)} min</>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {estKm !== null && estMin !== null && (
+                                                    <div style={{marginBottom: 12, fontSize: 14}}>
+                                                        From my
+                                                        location: {estKm.toFixed(1)} km, {Math.round(estMin)} min
+                                                    </div>
+                                                )}
+
+                                                <div style={{
+                                                    marginTop: '12px',
+                                                    display: 'flex',
+                                                    gap: '8px',
+                                                    flexWrap: 'wrap'
+                                                }}>
+                                                    <IonButton
+                                                        onClick={() => openDirections(selectedTrip.fromLatitude, selectedTrip.fromLongitude, selectedTrip.toLatitude, selectedTrip.toLongitude)}
+                                                    >
+                                                        Open Directions
+                                                    </IonButton>
+                                                    <IonButton
+                                                        fill="outline"
+                                                        onClick={computeFromCurrent}
+                                                        disabled={estimating}
+                                                    >
+                                                        {estimating ? 'Computing…' : 'Use My Location'}
+                                                    </IonButton>
+                                                </div>
+                                            </div>
+
+                                            {selectedTrip.description && (
+                                                <IonItem>
+                                                    <IonLabel>
+                                                        <h3>Notes</h3>
+                                                        <p>{selectedTrip.description}</p>
+                                                    </IonLabel>
+                                                </IonItem>
+                                            )}
+
+                                            {/* Vehicle Selection for Admin/Dispatcher */}
+                                            {isAdminOrDispatcher && selectedTrip.status === 'pending' && (
+                                                <>
+                                                    <IonItem>
+                                                        <IonLabel
+                                                            position="stacked">{t('trip.selectVehicle')} *</IonLabel>
+                                                        <IonSelect
+                                                            value={selectedVehicleId}
+                                                            onIonChange={(e) => setSelectedVehicleId(e.detail.value)}
+                                                            placeholder={t('trip.selectVehicle')}
+                                                            interface="action-sheet"
+                                                        >
+                                                            {vehicles.map((vehicle) => (
+                                                                <IonSelectOption key={vehicle.id} value={vehicle.id}>
+                                                                    {vehicle.name} - {vehicle.plateNumber}
+                                                                </IonSelectOption>
+                                                            ))}
+                                                        </IonSelect>
+                                                    </IonItem>
+                                                    <IonItem>
+                                                        <IonLabel
+                                                            position="stacked">{t('trip.selectDriver')} *</IonLabel>
+                                                        <IonSelect
+                                                            value={selectedDriverId}
+                                                            onIonChange={(e) => setSelectedDriverId(e.detail.value)}
+                                                            placeholder={t('trip.selectDriver')}
+                                                            interface="action-sheet"
+                                                        >
+                                                            {drivers.map((driver) => (
+                                                                <IonSelectOption key={driver.id} value={driver.id}>
+                                                                    {driver.firstName + ' ' + driver.lastName}
+                                                                </IonSelectOption>
+                                                            ))}
+                                                        </IonSelect>
+                                                    </IonItem>
+                                                </>
+                                            )}
+
+                                            {/* Display assigned vehicle */}
+                                            {selectedTrip.vehicle && (
+                                                <IonItem>
+                                                    <IonIcon icon={car} slot="start" color="primary"/>
+                                                    <IonLabel>
+                                                        <h3>{t('trip.assignedVehicle')}</h3>
+                                                        <p>
+                                                            {selectedTrip.vehicle.name}
+                                                        </p>
+                                                    </IonLabel>
+                                                </IonItem>
+                                            )}
+
+                                            {/* Display assigned driver */}
+                                            {selectedTrip.driver && (
+                                                <IonItem>
+                                                    <IonIcon icon={person} slot="start" color="tertiary"/>
+                                                    <IonLabel>
+                                                        <h3>Assigned Driver</h3>
+                                                        <p>
+                                                            {selectedTrip.driver.firstName} {selectedTrip.driver.lastName}
+                                                        </p>
+                                                        {selectedTrip.driver.email && (
+                                                            <p style={{fontSize: '12px', color: '#666'}}>
+                                                                {selectedTrip.driver.email}
+                                                            </p>
+                                                        )}
+                                                    </IonLabel>
+                                                </IonItem>
+                                            )}
+                                        </IonList>
+                                    </IonCardContent>
+                                </IonCard>
+
+                                {/* Action Buttons */}
+                                <div style={{marginTop: '16px', padding: '0 16px 16px'}}>
+                                    {normalizeStatus(selectedTrip.status) === 'pending' && isAdminOrDispatcher && (
+                                        <>
+                                            <IonButton
+                                                expand="block"
+                                                color="success"
+                                                onClick={handleAcceptTrip}
+                                                disabled={updating}
+                                            >
+                                                <IonIcon icon={checkmarkCircle} slot="start"/>
+                                                Approve Trip
+                                            </IonButton>
+                                            <IonButton
+                                                expand="block"
+                                                color="danger"
+                                                fill="outline"
+                                                onClick={() => handleStatusUpdate('rejected')}
+                                                disabled={updating}
+                                            >
+                                                <IonIcon icon={closeCircle} slot="start"/>
+                                                Reject Trip
+                                            </IonButton>
+                                        </>
+                                    )}
+
+                                    {normalizeStatus(selectedTrip.status) === 'approved' && isDriver && (
+                                        <IonButton
+                                            expand="block"
+                                            color="primary"
+                                            onClick={() => handleStatusUpdate('in_progress')}
+                                            disabled={updating}
+                                        >
+                                            <IonIcon icon={car} slot="start"/>
+                                            Start Trip
+                                        </IonButton>
+                                    )}
+
+                                    {normalizeStatus(selectedTrip.status) === 'in_progress' && (
+                                        <IonButton
+                                            expand="block"
+                                            color="success"
+                                            onClick={() => handleStatusUpdate('completed')}
+                                            disabled={updating}
+                                        >
+                                            <IonIcon icon={checkmarkCircle} slot="start"/>
+                                            Complete Trip
+                                        </IonButton>
+                                    )}
+
+                                    {['pending'].includes(normalizeStatus(selectedTrip.status)) && selectedTrip.creator?.id == user?.id && (
+                                        <IonButton
+                                            expand="block"
+                                            color="danger"
+                                            fill="outline"
+                                            onClick={() => handleStatusUpdate('cancelled')}
+                                            disabled={updating}
+                                            style={{marginTop: '8px'}}
+                                        >
+                                            <IonIcon icon={closeCircle} slot="start"/>
+                                            Cancel Trip
+                                        </IonButton>
+                                    )}
+                                    {['approved'].includes(normalizeStatus(selectedTrip.status)) && isAdminOrDispatcher && (
+                                        <IonButton
+                                            expand="block"
+                                            color="danger"
+                                            fill="outline"
+                                            onClick={() => handleStatusUpdate('cancelled')}
+                                            disabled={updating}
+                                            style={{marginTop: '8px'}}
+                                        >
+                                            <IonIcon icon={closeCircle} slot="start"/>
+                                            Cancel Approved Trip
+                                        </IonButton>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </IonContent>
+                </IonModal>
+
+                {/* Vehicle Selection Modal */}
+                <IonModal isOpen={showVehicleModal} onDidDismiss={() => setShowVehicleModal(false)}>
+                    <IonHeader>
+                        <IonToolbar>
+                            <IonTitle>Select Vehicle and Driver</IonTitle>
+                            <IonButtons slot="end">
+                                <IonButton onClick={() => setShowVehicleModal(false)}>
+                                    <IonIcon icon={close}/>
+                                </IonButton>
+                            </IonButtons>
+                        </IonToolbar>
+                    </IonHeader>
+                    <IonContent>
+                        {updating && (
+                            <div style={{display: 'flex', justifyContent: 'center', padding: '20px'}}>
+                                <IonSpinner/>
+                            </div>
+                        )}
+                        {!updating && filteredVehicles.length === 0 && (
+                            <div style={{textAlign: 'center', padding: '40px 20px', color: '#666'}}>
+                                <IonIcon icon={car} style={{fontSize: '64px', color: '#ccc'}}/>
+                                <h3>No vehicles found</h3>
+                                <p>{vehicleSearchText ? 'Try a different search term' : 'No available vehicles'}</p>
+                            </div>
+                        )}
+                        {!updating && filteredVehicles.length > 0 && (
+                            <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                <div style={{height: '50%'}}>
+                                    <IonToolbar>
+                                        <IonSearchbar
+                                            value={vehicleSearchText}
+                                            onIonInput={(e) => setVehicleSearchText(e.detail.value || '')}
+                                            placeholder="Search vehicle by name or plate number"
+                                            debounce={300}
+                                        />
+                                    </IonToolbar>
+                                    <IonList>
+                                        {filteredVehicles.map((vehicle) => (
+                                            <IonItem
+                                                key={vehicle.id}
+                                                button
+                                                onClick={() => handleVehicleSelect(vehicle.id)}
+                                                detail={true}
+                                                style={{
+                                                    backgroundColor: selectedVehicleId === vehicle.id ? '#dbeafe' : undefined,
+                                                    border: selectedVehicleId === vehicle.id ? '2px solid #3b82f6' : undefined,
+                                                    color: selectedVehicleId === vehicle.id ? '#1e3a8a' : undefined,
+                                                    transition: 'all 0.15s'
+                                                }}
+                                            >
+                                                <IonIcon icon={car} slot="start" color="primary"/>
+                                                <IonLabel>
+                                                    <h2>{vehicle.name}</h2>
+                                                    <p>Plate Number: {vehicle.plateNumber}</p>
+                                                </IonLabel>
+                                            </IonItem>
+                                        ))}
+                                    </IonList>
+                                </div>
+                                <div style={{height: '50%'}}>
+                                    <IonToolbar>
+                                        <IonSearchbar
+                                            value={driverSearchText}
+                                            onIonInput={(e) => setDriverSearchText(e.detail.value || '')}
+                                            placeholder="Search driver by name"
+                                            debounce={300}
+                                        />
+                                    </IonToolbar>
+                                    <IonList>
+                                        {filteredDrivers.map((driver) => (
+                                            <IonItem
+                                                key={driver.id}
+                                                button
+                                                onClick={() => handleDriverSelect(driver.id)}
+                                                detail={true}
+                                                style={{
+                                                    backgroundColor: selectedDriverId === driver.id ? '#dbeafe' : undefined,
+                                                    border: selectedDriverId === driver.id ? '2px solid #3b82f6' : undefined,
+                                                    color: selectedDriverId === driver.id ? '#1e3a8a' : undefined,
+                                                    transition: 'all 0.15s'
+                                                }}
+                                            >
+                                                <IonIcon icon={person} slot="start" color="primary"/>
+                                                <IonLabel>
+                                                    <h2>{driver.firstName + ' ' + driver.lastName}</h2>
+                                                </IonLabel>
+                                            </IonItem>
+                                        ))}
+                                    </IonList>
+                                </div>
+                            </div>
+                        )}
+                        <IonButton
+                            expand="block"
+                            color="success"
+                            onClick={() => attemptTripApproval(selectedVehicleId!, selectedDriverId!)}
+                            disabled={!selectedVehicleId || !selectedDriverId || updating}
+                            style={{margin: '16px'}}
+                        >
+                            <IonIcon icon={checkmarkCircle} slot="start"/>
+                            Confirm Assignment
+                        </IonButton>
+                    </IonContent>
+                </IonModal>
+            </IonContent>
+        </IonPage>
+    );
 };
 
 export default Activity;

@@ -95,7 +95,7 @@ const UserEdit: React.FC = () => {
       
       try {
         setIsLoading(true);
-        const userData = await userService.getUser(parseInt(id!));
+        const userData = await userService.getUser(id!);
         setUser(userData);
         
         // Set form values
@@ -129,7 +129,7 @@ const UserEdit: React.FC = () => {
       
       if (isEdit && user && id) {
         // Update existing user
-        await userService.updateUser(parseInt(id!), data);
+        await userService.updateUser(id!, data);
         presentToast({
           message: 'User updated successfully',
           duration: 3000,
@@ -198,7 +198,7 @@ const UserEdit: React.FC = () => {
     
     try {
       await presentLoading('Deleting user...');
-      await userService.deleteUser(parseInt(id!));
+      await userService.deleteUser(id!);
       
       presentToast({
         message: 'User deleted successfully',

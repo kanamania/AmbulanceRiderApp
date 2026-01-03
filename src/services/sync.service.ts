@@ -188,7 +188,7 @@ class SyncService {
         response = await apiService.get<Trip[]>(API_CONFIG.ENDPOINTS.TRIPS.LIST);
       } else {
         // Regular user gets their own trips
-        response = await apiService.get<Trip[]>(API_CONFIG.ENDPOINTS.TRIPS.BY_DRIVER(user?.id || 0));
+        response = await apiService.get<Trip[]>(API_CONFIG.ENDPOINTS.TRIPS.BY_DRIVER(user?.id || ''));
       }
 
       await cacheService.upsertTrips(response);

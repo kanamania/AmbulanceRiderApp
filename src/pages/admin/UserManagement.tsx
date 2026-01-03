@@ -90,7 +90,7 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const confirmDelete = (userId: number) => {
+  const confirmDelete = (userId: string) => {
     if (currentUser?.id === userId) {
       presentToast({
         message: 'You cannot delete your own account',
@@ -116,7 +116,7 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  const deleteUser = async (userId: number) => {
+  const deleteUser = async (userId: string) => {
     try {
       await userService.deleteUser(userId);
       setUsers(users.filter(user => user.id !== userId));
