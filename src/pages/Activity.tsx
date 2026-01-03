@@ -50,7 +50,7 @@ import {getNormalizedStatus, getStatusStyle} from '../utils/statusStyles';
 
 const Activity: React.FC = () => {
   const { t } = useTranslation();
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,8 +96,25 @@ const Activity: React.FC = () => {
     try {
       setLoading(true);
       const response = await tripService.getAllTrips();
-      setTrips(response);
-      filterTrips(response, statusFilter);
+      
+      // Filter trips based on user role
+      let filteredResponse = response;
+      console.log(response)
+      if (isAdminOrDispatcher) {
+        // Admin/Dispatcher see all trips
+        filteredResponse = response;
+      } else if (isDriver) {
+        // Driver gets assigned trips (driverId matches) or own trips (createdById matches)
+        filteredResponse = response.filter(trip => 
+          trip.driverId === user?.id || trip.creator?.id === user?.id
+        );
+      } else {
+        // User sees only own trips (createdById matches)
+        filteredResponse = response.filter(trip => trip.creator?.id === user?.id);
+      }
+      
+      setTrips(filteredResponse);
+      filterTrips(filteredResponse, statusFilter);
     } catch (error) {
       console.error('Error loading trips:', error);
       presentToast({
@@ -108,7 +125,7 @@ const Activity: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, t, presentToast, filterTrips]);
+  }, [statusFilter, t, presentToast, filterTrips, isAdminOrDispatcher, isDriver, user]);
 
   const loadVehicles = async () => {
     try {
@@ -178,8 +195,9 @@ const Activity: React.FC = () => {
     setShowVehicleModal(true);
   };
 
-  const attemptTripApproval = async (vehicleId: number, driverId: string) => {
+  const attemptTripApproval = async (vehicleId: number|undefined, driverId: string|undefined) => {
     if (!selectedTrip) return;
+    if(!driverId || !vehicleId) return;
 
     try {
       setUpdating(true);
@@ -223,36 +241,12 @@ const Activity: React.FC = () => {
     }
   };
 
-  const handleVehicleSelect = async (vehicleId: number) => {
+  const handleVehicleSelect = (vehicleId: number) => {
     setSelectedVehicleId(vehicleId);
-    const driverId = selectedDriverId;
-
-    if (!driverId) {
-      presentToast({
-        message: 'Please select a driver before approving the trip',
-        duration: 3000,
-        color: 'warning'
-      });
-      return;
-    }
-
-    await attemptTripApproval(vehicleId, driverId);
   };
 
-  const handleDriverSelect = async (driverId: string) => {
+  const handleDriverSelect = (driverId: string) => {
     setSelectedDriverId(driverId);
-    const vehicleId = selectedVehicleId;
-
-    if (vehicleId === undefined) {
-      presentToast({
-        message: 'Please select a vehicle before approving the trip',
-        duration: 3000,
-        color: 'warning'
-      });
-      return;
-    }
-
-    await attemptTripApproval(vehicleId, driverId);
   };
 
   const handleStatusUpdate = async (newStatus: string) => {
@@ -287,10 +281,16 @@ const Activity: React.FC = () => {
       });
       return;
     }
-    
+
+    let status = newStatus;
+    if(status === 'in_progress') {
+      status = 'in progress';
+    }
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+
     presentAlert({
       header: 'Update Trip Status',
-      message: `Are you sure you want to change the status to ${newStatus}?`,
+      message: `Are you sure you want to change the status to ${status}?`,
       inputs: newStatus === 'cancelled' ? [
         {
           name: 'reason',
@@ -794,7 +794,7 @@ const Activity: React.FC = () => {
                           >
                             {drivers.map((driver) => (
                               <IonSelectOption key={driver.id} value={driver.id}>
-                                {driver.name}
+                                {driver.firstName + ' ' + driver.lastName}
                               </IonSelectOption>
                             ))}
                           </IonSelect>
@@ -886,7 +886,7 @@ const Activity: React.FC = () => {
                     </IonButton>
                   )}
                   
-                  {['pending', 'approved', 'in_progress'].includes(normalizeStatus(selectedTrip.status)) && (
+                  {['pending'].includes(normalizeStatus(selectedTrip.status)) && selectedTrip.creator?.id == user?.id && (
                     <IonButton 
                       expand="block" 
                       color="danger"
@@ -897,6 +897,19 @@ const Activity: React.FC = () => {
                     >
                       <IonIcon icon={closeCircle} slot="start" />
                       Cancel Trip
+                    </IonButton>
+                  )}
+                  {['approved'].includes(normalizeStatus(selectedTrip.status)) && isAdminOrDispatcher && (
+                    <IonButton
+                      expand="block"
+                      color="danger"
+                      fill="outline"
+                      onClick={() => handleStatusUpdate('cancelled')}
+                      disabled={updating}
+                      style={{ marginTop: '8px' }}
+                    >
+                      <IonIcon icon={closeCircle} slot="start" />
+                      Cancel Approved Trip
                     </IonButton>
                   )}
                 </div>
@@ -932,7 +945,7 @@ const Activity: React.FC = () => {
             )}
             {!updating && filteredVehicles.length > 0 && (
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
-              <div style={{width: '50%'}}>
+              <div style={{height: '50%'}}>
                 <IonToolbar>
                   <IonSearchbar
                     value={vehicleSearchText}
@@ -948,7 +961,12 @@ const Activity: React.FC = () => {
                           button
                           onClick={() => handleVehicleSelect(vehicle.id)}
                           detail={true}
-                          className={`transition-colors duration-150 rounded-lg ${selectedVehicleId === vehicle.id ? 'border border-primary bg-primary/10' : 'hover:bg-muted/40'}`}
+                          style={{
+                            backgroundColor: selectedVehicleId === vehicle.id ? '#dbeafe' : undefined,
+                            border: selectedVehicleId === vehicle.id ? '2px solid #3b82f6' : undefined,
+                            color: selectedVehicleId === vehicle.id ? '#1e3a8a' : undefined,
+                            transition: 'all 0.15s'
+                          }}
                       >
                         <IonIcon icon={car} slot="start" color="primary" />
                         <IonLabel>
@@ -959,7 +977,7 @@ const Activity: React.FC = () => {
                   ))}
                 </IonList>
               </div>
-              <div style={{width: '50%'}}>
+              <div style={{height: '50%'}}>
                 <IonToolbar>
                   <IonSearchbar
                     value={driverSearchText}
@@ -975,11 +993,16 @@ const Activity: React.FC = () => {
                           button
                           onClick={() => handleDriverSelect(driver.id)}
                           detail={true}
-                          className={`transition-colors duration-150 rounded-lg ${selectedDriverId === driver.id ? 'border border-primary bg-primary/10' : 'hover:bg-muted/40'}`}
+                          style={{
+                            backgroundColor: selectedDriverId === driver.id ? '#dbeafe' : undefined,
+                            border: selectedDriverId === driver.id ? '2px solid #3b82f6' : undefined,
+                            color: selectedDriverId === driver.id ? '#1e3a8a' : undefined,
+                            transition: 'all 0.15s'
+                          }}
                       >
                         <IonIcon icon={person} slot="start" color="primary" />
                         <IonLabel>
-                          <h2>{driver.name}</h2>
+                          <h2>{driver.firstName + ' ' + driver.lastName}</h2>
                         </IonLabel>
                       </IonItem>
                   ))}
@@ -987,6 +1010,16 @@ const Activity: React.FC = () => {
               </div>
               </div>
             )}
+            <IonButton 
+              expand="block" 
+              color="success"
+              onClick={() => attemptTripApproval(selectedVehicleId!, selectedDriverId!)}
+              disabled={!selectedVehicleId || !selectedDriverId || updating}
+              style={{ margin: '16px' }}
+            >
+              <IonIcon icon={checkmarkCircle} slot="start" />
+              Confirm Assignment
+            </IonButton>
           </IonContent>
         </IonModal>
       </IonContent>

@@ -2,7 +2,7 @@ import { TripType } from './index';
 import { TelemetryData } from './telemetry.types';
 
 export interface User {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;

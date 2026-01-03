@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonItem,
   IonLabel,
@@ -12,6 +12,7 @@ import {
   IonModal,
 } from '@ionic/react';
 import { TripTypeAttribute } from '../types';
+import pricingService, { PricingMatrix } from '../services/pricing.service';
 
 interface SelectOption {
   value?: string | number;
@@ -32,6 +33,21 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
   const handleChange = (newValue: unknown) => {
     onChange(attribute.name, newValue);
   };
+
+  // State for dynamic options
+  const [dynamicOptions, setDynamicOptions] = useState<PricingMatrix[]>([]);
+
+  // Override dataType to 'select' if attribute is 'pricing matrices'
+  const effectiveDataType = (attribute.label.toLowerCase() === 'parcel size' || attribute.name.toLowerCase() === 'parcel size') ? 'select' : attribute.dataType;
+
+  // Fetch dynamic options for Parcel Size
+  useEffect(() => {
+    if (effectiveDataType === 'select' && (attribute.label.toLowerCase() === 'parcel size' || attribute.name.toLowerCase() === 'parcel size')) {
+      pricingService.getAllPricingMatrices()
+        .then(setDynamicOptions)
+        .catch(console.error);
+    }
+  }, [attribute, effectiveDataType]);
 
   // Parse validation rules if available
   const getValidationRules = () => {
@@ -58,7 +74,12 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
   const validationRules = getValidationRules();
   const options = getOptions();
 
-  switch (attribute.dataType) {
+  // Determine select options: use dynamic for Parcel Size, else parsed
+  const selectOptions = (attribute.label.toLowerCase() === 'parcel size' || attribute.name.toLowerCase() === 'parcel size')
+    ? dynamicOptions.map(m => ({ value: m.id, label: m.name }))
+    : options;
+
+  switch (effectiveDataType) {
     case 'text':
       return (
         <IonItem>
@@ -183,7 +204,7 @@ const DynamicFormField: React.FC<DynamicFormFieldProps> = ({
             placeholder={attribute.placeholder || `Select ${attribute.label.toLowerCase()}`}
             interface="action-sheet"
           >
-            {options.map((option: SelectOption | string, index: number) => {
+            {selectOptions.map((option: SelectOption | string, index: number) => {
               const optionValue = typeof option === 'string' ? option : (option.value ?? '');
               const optionLabel = typeof option === 'string' ? option : (option.label ?? '');
               return (

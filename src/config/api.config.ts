@@ -120,6 +120,9 @@ export const API_CONFIG = {
     SYSTEM: {
       DATA: '/system/data', // Full data endpoint with optional include params
     },
+    PRICING: {
+      LIST: '/pricing',
+    },
   },
 };
 
